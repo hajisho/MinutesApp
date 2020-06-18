@@ -1,28 +1,53 @@
-//引用: http://vivacocoa.jp/go/gin/gin_firststep.php
-
 package main
 
 import (
-	// Go の標準パッケージではなく、gin のパッケージをインポートします
+	//ginのインポート
 	"github.com/gin-gonic/gin"
+	//"encoding/json"
+	//"fmt"
 )
 
+type Message struct {
+	  //`json:"id"` を　`json: "id"`　にすると読み込めずにエラーなのだが、出力されないので気づかない
+		//なので指定しているはずのに小文字にならないという勘違いが発生する
+    Id   int    `json:"id"`
+    Message string `json:"message"`
+}
+
+type Messages []Message
+var messages Messages
+
 func main() {
-	// gin の変数を定義しています
+
+	test := Message{
+		Id: 1,
+		Message: "テスト",
+	}
+
+	messages = append(messages, test)
+
+	//fmt.Printf("(%%#v) %#v\n", messages)
+
 	router := gin.Default()
-	// css などの静的ファイルのディレクトリを指定しています
+	// 静的ファイルのディレクトリを指定
 	router.Static("dist", "./dist")
-	// HTML ファイルのディレクトリを指定しています
+	// HTML ファイルのディレクトリを指定
 	router.LoadHTMLGlob("./dist/public/*.html")
-	// "/"ルートと handler 関数を関連づけています。handler という関数名は任意で付けた関数名です
+	// / に　GETリクエストが飛んできたらhandler関数を実行
 	router.GET("/", handler)
+
+	router.GET("/message", returnMessage)
 	// サーバーを起動しています
 	router.Run()
 }
 
 // 引数の型はデフォルトだと思います、引数名は任意でしょう
 func handler(ctx *gin.Context) {
-	// 200 の意味はわかりません。デフォルトではないかと思います
 	// gin.H{}で、go ファイルの変数を HTML テンプレートに渡します。この例では何も渡していません。
 	ctx.HTML(200, "index.html", gin.H{})
+}
+
+
+func returnMessage(ctx *gin.Context){
+	ctx.JSON(200, messages)
 }
