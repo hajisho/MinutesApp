@@ -1,5 +1,9 @@
 package main
 
+//goはスペースが意味を持っているっぽい（調べてない
+//pythonのインデントの感じ
+//違うのはエラーなのにエラーと出力されないことがあること
+
 import (
 	//ginのインポート
 	"github.com/gin-gonic/gin"
@@ -16,15 +20,19 @@ type Message struct {
 
 type Messages []Message
 var messages Messages
+//ID用
+var count int
+
+func addMessage(message string){
+	messages = append(messages,Message{count,message})
+	count++;
+}
+
 
 func main() {
-
-	test := Message{
-		Id: 1,
-		Message: "テスト",
-	}
-
-	messages = append(messages, test)
+	count=0
+	addMessage("餃子")
+	addMessage("チャーハン")
 
 	//fmt.Printf("(%%#v) %#v\n", messages)
 
@@ -36,7 +44,7 @@ func main() {
 	// / に　GETリクエストが飛んできたらhandler関数を実行
 	router.GET("/", handler)
 
-	router.GET("/message", returnMessage)
+	router.GET("/message", fetchMessage)
 	// サーバーを起動しています
 	router.Run()
 }
@@ -47,7 +55,7 @@ func handler(ctx *gin.Context) {
 	ctx.HTML(200, "index.html", gin.H{})
 }
 
-
-func returnMessage(ctx *gin.Context){
+//messagesに含まれるものを jsonで返す
+func fetchMessage(ctx *gin.Context){
 	ctx.JSON(200, messages)
 }
