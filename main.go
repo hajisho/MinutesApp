@@ -46,7 +46,7 @@ func main() {
 
 	router.GET("/message", fetchMessage)
 	// サーバーを起動しています
-	router.Run()
+	router.Run(":10000")
 }
 
 // 引数の型はデフォルトだと思います、引数名は任意でしょう
