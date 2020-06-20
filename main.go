@@ -43,7 +43,7 @@ func main() {
 	router.LoadHTMLGlob("./dist/public/*.html")
 	// / に　GETリクエストが飛んできたらhandler関数を実行
 	router.GET("/", handler)
-
+	// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
 	router.GET("/message", fetchMessage)
 	// サーバーを起動しています
 	router.Run(":10000")
