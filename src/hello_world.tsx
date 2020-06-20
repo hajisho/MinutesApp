@@ -10,6 +10,7 @@ function GetMessage() {
   const [data, setData] = useState([]);
 
   useEffect(() => {
+    // TODO async関数にするか、Promiseで展開する
     //直でasync関数を受け取れないので一度噛ませる
     const res = async() => {
       //ルート/message　に対して GETリクエストを送る
