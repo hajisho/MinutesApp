@@ -11,6 +11,7 @@ function GetMessage() {
 
   useEffect(() => {
     //直でasync関数を受け取れないので一度噛ませる
+    //My comment!!!
     const res = async() => {
       //ルート/message　に対して GETリクエストを送る
       //帰ってきたものをjsonにしてuseStateに突っ込む
