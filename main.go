@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	//"encoding/json"
 	//"fmt"
+	"github.com/jinzhu/gorm"
+	_ "github.com/mattn/go-sqlite3" //DBのパッケージだが、操作はGORMで行うため、importだけして使わない
 )
 
 type Message struct {
