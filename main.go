@@ -6,47 +6,28 @@ package main
 
 import (
 	//ginのインポート
+	"net/http"
 	"github.com/gin-gonic/gin"
 	//"encoding/json"
 	//"fmt"
-	"github.com/jinzhu/gorm"
-	_ "github.com/mattn/go-sqlite3" //DBのパッケージだが、操作はGORMで行うため、importだけして使わない
 )
 
-type Message struct {
-	  //`json:"id"` を　`json: "id"`　にすると読み込めずにエラーなのだが、出力されないので気づかない
-		//なので指定しているはずのに小文字にならないという勘違いが発生する
-    Id   int    `json:"id"`
-    Message string `json:"message"`
-}
-
-type Messages []Message
-var messages Messages
-//ID用
-var count int
-
-func addMessage(message string){
-	messages = append(messages,Message{count,message})
-	count++;
-}
-
-
 func main() {
-	count=0
-	addMessage("餃子")
-	addMessage("チャーハン")
-
-	//fmt.Printf("(%%#v) %#v\n", messages)
 
 	router := gin.Default()
 	// 静的ファイルのディレクトリを指定
 	router.Static("dist", "./dist")
 	// HTML ファイルのディレクトリを指定
 	router.LoadHTMLGlob("./dist/public/*.html")
+
+	dbInit() //データベースマイグレート
+
 	// / に　GETリクエストが飛んできたらhandler関数を実行
 	router.GET("/", handler)
 	// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
 	router.GET("/message", fetchMessage)
+	// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
+	router.POST("/add_message", handleAddMessage)
 	// サーバーを起動しています
 	router.Run(":10000")
 }
@@ -58,6 +39,35 @@ func handler(ctx *gin.Context) {
 }
 
 //messagesに含まれるものを jsonで返す
-func fetchMessage(ctx *gin.Context){
+func fetchMessage(ctx *gin.Context) {
+	messages := dbGetAll()
 	ctx.JSON(200, messages)
+}
+
+// AddMessageRequest は、クライアントからのメッセージ追加要求のフォーマットです。
+type AddMessageRequest struct {
+	Message string `json:"message"`
+}
+
+func handleAddMessage(ctx *gin.Context) {
+	// POST bodyからメッセージを獲得
+	req := new(AddMessageRequest)
+	err := ctx.BindJSON(req)
+	if err != nil {
+		// メッセージがJSONではない、もしくは、content-typeがapplication/jsonになっていない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request as JSON format is expected"})
+		return
+	}
+
+	if req.Message == "" {
+		// メッセージがない、無効なリクエスト
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to parameter 'message' being empty"})
+		// 帰ることを忘れない
+		return
+	}
+
+	//メッセージをデータベースへ追加
+	dbInsert(req.Message)
+
+	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
