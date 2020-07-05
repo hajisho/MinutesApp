@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react"
 import ReactDOM from 'react-dom'
 import PropTypes from 'prop-types';
 
-import MessagePostForm from './form';
+import MessagePostForm from './messageForm';
 
 type Message = {
   ID: number,
@@ -28,7 +28,6 @@ function GetMessage(props) {
       .catch(console.log);
   }, [props.forceUpdate]);
 
-  console.log(data)
 
   return (
     //タグが複数できる場合は何らかのタグで全体を囲う
@@ -67,16 +66,11 @@ function MessageSection() {
   )
 }
 
-ReactDOM.render(<MessageSection />, document.getElementById('message'));
 
-//文字通り
-//理解が進んだら消す予定
-class Hello extends React.Component{
-  render(){
-    return(
-      <div>Hello World</div>
-    );
-  }
+//webpackでバンドルしている関係で存在していないIDが指定される場合がある
+//エラーをそのままにしておくと、エラー以後のレンダリングがされない
+try{
+  ReactDOM.render(<MessageSection />, document.getElementById('message'));
+}catch(e){
+  console.log(e);
 }
-
-ReactDOM.render(<Hello />, document.getElementById("content"))
