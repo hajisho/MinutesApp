@@ -5,25 +5,61 @@ import(
   _ "github.com/mattn/go-sqlite3" //DBのパッケージだが、操作はGORMで行うため、importだけして使わない
 )
 
-
-type Message struct{
-  gorm.Model
-  Message string
-}
 /*
-テーブル名：messages -->　テーブル名は自動で複数形になる
+gorm.Modelの中身
 カラム
   ・id
   ・created_at
   ・updated_at
   ・deleted_at
-  ・Message (追加)
 */
 /*外部からカラムを参照するときは
 id → ID
 created_at → CreatedAt
 updated_at → UpdatedAt
 deleted_at → DeletedAt
+*/
+// テーブル名：messages -->　テーブル名は自動で複数形になる
+type Message struct{
+  gorm.Model
+  Message string
+  MeetingID
+  UserID string
+}
+
+type User struct {
+  gorm.Model
+  LoginID string `gorm:"unique;not null"`
+  Password string
+  Name string
+}
+
+type Meeting struct {
+  gorm.Model
+  Name string
+}
+
+type Entry struct {
+  gorm.Model
+  MeetingID
+  UserID
+}
+/*
+DBの内容
+(ID,作成日,更新日,削除日のカラムは全てに入っている)
+・ユーザー
+  ・ログインID
+  ・パスワード（暗号化したもの）
+  ・name(ニックネーム)
+・会議
+  ・会議名
+・メッセージ
+  ・内容
+  ・会議ID
+  ・ユーザーID
+・エントリー
+  ・会議ID
+  ・ユーザーID
 */
 
 //DBマイグレート
@@ -33,7 +69,7 @@ func dbInit(){
   if err != nil{
     panic("データベース開ません(dbinit)")
   }
-  db.AutoMigrate(&Message{}) //ファイルがなければ、生成を行う。すでにあればマイグレート。すでにあってマイグレートされていれば何も行わない
+  db.AutoMigrate(&User{}, &Message{}, Meeting{}, &Entry{}) //ファイルがなければ、生成を行う。すでにあればマイグレート。すでにあってマイグレートされていれば何も行わない
   defer db.Close()
 }
 
