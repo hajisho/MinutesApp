@@ -23,6 +23,9 @@ export default function MessagePostForm(props) {
         headers: {
           'Content-Type': 'application/json',
         },
+        //相応しくないかも
+        //same-originを使うべき？
+        credentials: 'include',
         body: JSON.stringify({ message }),
       });
       const obj = await res.json();

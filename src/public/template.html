@@ -2,15 +2,14 @@
 <html lang="ja">
 <head>
 	<meta charset="UTF-8">
-	<title>Gin / 静的なページ</title>
+	<title>{{.title}}</title>
 	<link rel="stylesheet" href="/dist/public/style.css">
 </head>
 <body>
-	<h1>Go Gin</h1>
-	<div align="center">
-	<p>静的なページ</p>
-	</div>
-	<div id="message"></div>
+	{{range .id}}
+	<div id={{.}}></div>
+	{{end}}
+
   <script src="/dist/bundle.js"></script>
 </body>
 </html>
