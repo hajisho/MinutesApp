@@ -49,7 +49,7 @@ function LoginPostForm(props) {
 
       //ログインが成功したらmainページにリダイレクト
       location.href = "/";
-      
+
     } finally {
       setWorking(false);
     }
@@ -60,13 +60,13 @@ function LoginPostForm(props) {
       <input
         value={userId}
         type='textbox'
-        placeholder='ここに追加したいメッセージを入力します'
+        placeholder='ユーザーID'
         onChange={(event) => setUserId(event.target.value)}
       />
       <input
         value={password}
         type='textbox'
-        placeholder='ここに追加したいメッセージを入力します'
+        placeholder='パスワード'
         onChange={(event) => setPassword(event.target.value)}
       />
       <button disabled={working}>ログイン</button>
@@ -75,7 +75,6 @@ function LoginPostForm(props) {
 }
 
 LoginPostForm.propTypes = {
-  // 新しいメッセージの追加が正常に完了したら呼ばれる関数
   onSubmitSuccessful: PropTypes.func,
 };
 
@@ -86,8 +85,6 @@ LoginPostForm.defaultProps = {
 
 //webpackでバンドルしている関係で存在していないIDが指定される場合がある
 //エラーをそのままにしておくと、エラー以後のレンダリングがされない
-try{
+if(document.getElementById('login') != null){
   ReactDOM.render(<LoginPostForm />, document.getElementById('login'));
-}catch(e){
-  console.log(e);
 }

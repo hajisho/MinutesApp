@@ -51,8 +51,7 @@ func mainPage(ctx *gin.Context) {
 		ctx.Redirect(http.StatusMovedPermanently, "/login")
   	ctx.Abort()
   }
-	// gin.H{}で、go ファイルの変数を HTML テンプレートに渡します。この例では何も渡していません。
-	ctx.HTML(http.StatusOK, "index.html", gin.H{})
+	ctx.HTML(http.StatusOK, "index.html", gin.H{"title":"議事録","id":[]string{"message"}})
 }
 
 //messagesに含まれるものを jsonで返す
@@ -91,7 +90,7 @@ func handleAddMessage(ctx *gin.Context) {
 
 //ログインページのhtmlを返す
 func returnLoginPage(ctx *gin.Context){
-	ctx.HTML(http.StatusOK, "login.html", gin.H{})
+	ctx.HTML(http.StatusOK, "index.html", gin.H{"title":"loginページ","id":[]string{"login"}})
 }
 
 //ログイン試行時にクライアントから送られてくるフォーマット
