@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import ReactDOM from 'react-dom';
 // メッセージ追加のAPIへのURL
-const API_URL_LOGIN = '/login';
+const API_URL_LOGIN = '/register';
 
 function LoginPostForm(props) {
   // テキストボックス内のメッセージ
@@ -50,12 +50,12 @@ function LoginPostForm(props) {
         throw new Error(`An response from ${API_URL_LOGIN} returned non true value as 'success' member`);
       }
       // 要求は成功
-      ReactDOM.render(<p>ログイン成功!</p>, document.getElementById('serverMessage'));
+      ReactDOM.render(<p>登録完了! 3秒後にログインページへ推移</p>, document.getElementById('serverMessage'));
       // リスナ関数を呼ぶ
       props.onSubmitSuccessful();
 
-      //ログインが成功したらmainページにリダイレクト
-      location.href = "/";
+      //登録が成功したらログインページにリダイレクト
+      setTimeout(() => {location.href = "/login"},3000);
 
     } finally {
       setWorking(false);
@@ -64,8 +64,8 @@ function LoginPostForm(props) {
 
   return (
     <>
-      <a href="/register">
-        <button type="button">登録ページへ</button>
+      <a href="/login">
+        <button type="button">loginページへ</button>
       </a>
       <form onSubmit={handleSubmit}>
         <input
@@ -80,7 +80,7 @@ function LoginPostForm(props) {
           placeholder='パスワード'
           onChange={(event) => setPassword(event.target.value)}
         />
-        <button disabled={working}>ログイン</button>
+        <button disabled={working}>登録</button>
       </form>
     </>
   )
@@ -97,6 +97,6 @@ LoginPostForm.defaultProps = {
 
 //webpackでバンドルしている関係で存在していないIDが指定される場合がある
 //エラーをそのままにしておくと、エラー以後のレンダリングがされない
-if(document.getElementById('login') != null){
-  ReactDOM.render(<LoginPostForm />, document.getElementById('login'));
+if(document.getElementById('register') != null){
+  ReactDOM.render(<LoginPostForm />, document.getElementById('register'));
 }

@@ -14,6 +14,7 @@ import (
 //フロントエンドのログイン動作をテストするために作った臨時のグローバル変数
 //バックエンドが完成しだい消してください
 var Temp string
+var tempUserList []string
 
 func main() {
 
@@ -28,7 +29,7 @@ func main() {
 	dbInit() //データベースマイグレート
 
 	// / に　GETリクエストが飛んできたらhandler関数を実行
-	router.GET("/", mainPage)
+	router.GET("/", returnMainPage)
 	// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
 	router.GET("/message", fetchMessage)
 	// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
@@ -37,6 +38,10 @@ func main() {
 	router.GET("/login",returnLoginPage)
   // ログイン動作を司る
 	router.POST("/login",tempChallengeLogin)
+	//ユーザー登録ページを返す
+	router.GET("/register",returnRegisterPage)
+	//　ユーザー登録動作を司る
+	router.POST("/register",tempChallengeRegister)
   //セッション情報の削除のつもり
 	router.GET("/logout",tempDeleteCookie)
 
@@ -45,14 +50,25 @@ func main() {
 }
 
 
-func mainPage(ctx *gin.Context) {
+func returnMainPage(ctx *gin.Context) {
 	//Cookieがなければログインページにリダイレクト　のつもり
 	if(Temp==""){
 		ctx.Redirect(http.StatusMovedPermanently, "/login")
   	ctx.Abort()
   }
-	ctx.HTML(http.StatusOK, "index.html", gin.H{"title":"議事録","id":[]string{"message"}})
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"議事録","id":[]string{"message"}})
 }
+
+//ログインページのhtmlを返す
+func returnLoginPage(ctx *gin.Context){
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"loginページ","id":[]string{"login","serverMessage"}})
+}
+
+//ユーザー登録ページのhtmlを返す
+func returnRegisterPage(ctx *gin.Context){
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"ユーザー登録ページ","id":[]string{"register","serverMessage"}})
+}
+
 
 //messagesに含まれるものを jsonで返す
 func fetchMessage(ctx *gin.Context) {
@@ -88,11 +104,6 @@ func handleAddMessage(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-//ログインページのhtmlを返す
-func returnLoginPage(ctx *gin.Context){
-	ctx.HTML(http.StatusOK, "index.html", gin.H{"title":"loginページ","id":[]string{"login"}})
-}
-
 //ログイン試行時にクライアントから送られてくるフォーマット
 type userInfo struct {
 	UserId string `json:"userId"`
@@ -114,14 +125,52 @@ func tempChallengeLogin(ctx *gin.Context){
 
 	if req.UserId == "" || req.Password == "" {
 		// メッセージがない、無効なリクエスト
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to parameter 'message' being empty"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to parameter 'userId' or 'password' being empty"})
 		// 帰ることを忘れない
 		return
 	}
 
-	//Cookieセットのイメージ
-	//本来はクライアント側にcookieが帰る
-	Temp = req.UserId
+	for _,value := range tempUserList{
+		if req.UserId == value{
+			//Cookieセットのイメージ
+			//本来はクライアント側にcookieが帰る
+			Temp = req.UserId
+			ctx.JSON(http.StatusOK, gin.H{"success": true})
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusBadRequest, gin.H{"error": "user not exist"})
+}
+
+//登録動作テストのための臨時関数
+func tempChallengeRegister(ctx *gin.Context){
+	// POST bodyからメッセージを獲得
+	req := new(userInfo)
+	err := ctx.BindJSON(req)
+
+	if err != nil {
+		// メッセージがJSONではない、もしくは、content-typeがapplication/jsonになっていない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request as JSON format is expected"})
+		return
+	}
+
+	if req.UserId == "" || req.Password == "" {
+		// メッセージがない、無効なリクエスト
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to parameter 'userId' or 'password' being empty"})
+		// 帰ることを忘れない
+		return
+	}
+
+	for _,value := range tempUserList{
+		if req.UserId == value{
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "already use this id"})
+			return
+		}
+	}
+
+	tempUserList = append(tempUserList,req.UserId)
+
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
 
