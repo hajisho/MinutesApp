@@ -2,28 +2,63 @@ package main
 
 import(
   "github.com/jinzhu/gorm"
+  "golang.org/x/crypto/bcrypt"  // パスワードを暗号化する際に使う
   _ "github.com/mattn/go-sqlite3" //DBのパッケージだが、操作はGORMで行うため、importだけして使わない
 )
 
-
-type Message struct{
-  gorm.Model
-  Message string
-}
 /*
-テーブル名：messages -->　テーブル名は自動で複数形になる
+gorm.Modelの中身
 カラム
   ・id
   ・created_at
   ・updated_at
   ・deleted_at
-  ・Message (追加)
 */
 /*外部からカラムを参照するときは
 id → ID
 created_at → CreatedAt
 updated_at → UpdatedAt
 deleted_at → DeletedAt
+*/
+// テーブル名：messages -->　テーブル名は自動で複数形になる
+type Message struct{
+  gorm.Model
+  Message string
+  MeetingID int
+  UserID int
+}
+
+type User struct {
+  gorm.Model
+  Username string `gorm:"unique;not null"`
+  Password string `gorm:"not null"`
+}
+
+type Meeting struct {
+  gorm.Model
+  Name string
+}
+
+type Entry struct {
+  gorm.Model
+  MeetingID int
+  UserID int
+}
+/*
+DBの内容
+(ID,作成日,更新日,削除日のカラムは全てに入っている)
+・ユーザー
+  ・ユーザーネーム（ログインID）
+  ・パスワード（暗号化したもの）
+・会議
+  ・会議名
+・メッセージ
+  ・内容
+  ・会議ID
+  ・ユーザーID
+・エントリー
+  ・会議ID
+  ・ユーザーID
 */
 
 //DBマイグレート
@@ -33,7 +68,7 @@ func dbInit(){
   if err != nil{
     panic("データベース開ません(dbinit)")
   }
-  db.AutoMigrate(&Message{}) //ファイルがなければ、生成を行う。すでにあればマイグレート。すでにあってマイグレートされていれば何も行わない
+  db.AutoMigrate(&User{}, &Message{}, Meeting{}, &Entry{}) //ファイルがなければ、生成を行う。すでにあればマイグレート。すでにあってマイグレートされていれば何も行わない
   defer db.Close()
 }
 
@@ -99,4 +134,40 @@ func dbDelete(id int){
   db.First(&message, id)
   db.Delete(&message)
   db.Close()
+}
+
+// ユーザー登録処理
+func createUser(username string, password string) error {
+  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+  if err != nil{
+    panic("データベース開ません(createUser)")
+  }
+  defer db.Close()
+  // パスワード暗号化
+  passwordEncrypt, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+  // Insert処理
+  if err := db.Create(&User{Username: username, Password: string(passwordEncrypt)}).Error; err != nil {
+    return err
+  }
+  return nil
+}
+
+// ユーザーネーム(ログインID)を指定してそのユーザーのレコードを取ってくる
+// 指定したユーザーのレコードがない場合は、IDが0のレコードを返す
+func getUser(username string) User {
+  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+  if err != nil{
+    panic("データベース開ません(getUser)")
+  }
+  defer db.Close()
+  var user User
+  db.Where(&User{Username: username}).Find(&user)
+  return user
+}
+
+// パスワードの比較
+// dbPasswordはデータベースから取ってきたパスワード（暗号化済み）
+// formPasswordはログイン時に入力されたパスワード（平文）
+func comparePassword(dbPassword string, formPassword string) error {
+  return bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(formPassword))
 }
