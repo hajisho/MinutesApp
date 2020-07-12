@@ -153,9 +153,7 @@ func createUser(username string, password string) error {
 }
 
 // ユーザーネーム(ログインID)を指定してそのユーザーのレコードを取ってくる
-// 使用時
-// user := getuser(userId)
-// ログインID: user.Username パスワード: user.Password など
+// 指定したユーザーのレコードがない場合は、IDが0のレコードを返す
 func getUser(username string) User {
   db, err := gorm.Open("sqlite3", "minutes.sqlite3")
   if err != nil{
@@ -163,7 +161,7 @@ func getUser(username string) User {
   }
   defer db.Close()
   var user User
-  db.Where("username = ?", username).First(&user)
+  db.Where(&User{Username: username}).Find(&user)
   return user
 }
 
@@ -171,5 +169,5 @@ func getUser(username string) User {
 // dbPasswordはデータベースから取ってきたパスワード（暗号化済み）
 // formPasswordはログイン時に入力されたパスワード（平文）
 func comparePassword(dbPassword string, formPassword string) error {
-  return bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(password))
+  return bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(formPassword))
 }
