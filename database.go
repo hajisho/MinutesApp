@@ -23,15 +23,14 @@ deleted_at → DeletedAt
 type Message struct{
   gorm.Model
   Message string
-  MeetingID
-  UserID string
+  MeetingID int
+  UserID int
 }
 
 type User struct {
   gorm.Model
-  LoginID string `gorm:"unique;not null"`
+  Username string `gorm:"unique;not null"`
   Password string
-  Name string
 }
 
 type Meeting struct {
@@ -41,16 +40,15 @@ type Meeting struct {
 
 type Entry struct {
   gorm.Model
-  MeetingID
-  UserID
+  MeetingID int
+  UserID int
 }
 /*
 DBの内容
 (ID,作成日,更新日,削除日のカラムは全てに入っている)
 ・ユーザー
-  ・ログインID
+  ・ユーザーネーム（ログインID）
   ・パスワード（暗号化したもの）
-  ・name(ニックネーム)
 ・会議
   ・会議名
 ・メッセージ
@@ -135,4 +133,33 @@ func dbDelete(id int){
   db.First(&message, id)
   db.Delete(&message)
   db.Close()
+}
+
+// ユーザー登録処理
+func createUser(username string, password string) error {
+  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+  if err != nil{
+    panic("データベース開ません(dgUpdate)")
+  }
+  defer db.Close()
+  // Insert処理
+  if err := db.Create(&User{Username: username, Password: password}).Error; err != nil {
+    return err
+  }
+  return nil
+}
+
+// ユーザーネーム(ログインID)を指定してそのユーザーのレコードを取ってくる
+// 使用時
+// user := getuser(userId)
+// ログインID: user.Username パスワード: user.Password
+func getUser(username string) User {
+  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+  if err != nil{
+    panic("データベース開ません(dgUpdate)")
+  }
+  defer db.Close()
+  var user User
+  db.Where("username = ?", username).First(&user)
+  return user
 }
