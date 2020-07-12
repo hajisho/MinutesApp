@@ -69,8 +69,6 @@ function MessageSection() {
 
 //webpackでバンドルしている関係で存在していないIDが指定される場合がある
 //エラーをそのままにしておくと、エラー以後のレンダリングがされない
-try{
+if(document.getElementById('message') != null){
   ReactDOM.render(<MessageSection />, document.getElementById('message'));
-}catch(e){
-  console.log(e);
 }
