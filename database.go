@@ -2,6 +2,7 @@ package main
 
 import(
   "github.com/jinzhu/gorm"
+  "golang.org/x/crypto/bcrypt"  // パスワードを暗号化する際に使う
   _ "github.com/mattn/go-sqlite3" //DBのパッケージだが、操作はGORMで行うため、importだけして使わない
 )
 
@@ -30,7 +31,7 @@ type Message struct{
 type User struct {
   gorm.Model
   Username string `gorm:"unique;not null"`
-  Password string
+  Password string `gorm:"not null"`
 }
 
 type Meeting struct {
@@ -139,11 +140,13 @@ func dbDelete(id int){
 func createUser(username string, password string) error {
   db, err := gorm.Open("sqlite3", "minutes.sqlite3")
   if err != nil{
-    panic("データベース開ません(dgUpdate)")
+    panic("データベース開ません(createUser)")
   }
   defer db.Close()
+  // パスワード暗号化
+  passwordEncrypt, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
   // Insert処理
-  if err := db.Create(&User{Username: username, Password: password}).Error; err != nil {
+  if err := db.Create(&User{Username: username, Password: string(passwordEncrypt)}).Error; err != nil {
     return err
   }
   return nil
@@ -152,14 +155,21 @@ func createUser(username string, password string) error {
 // ユーザーネーム(ログインID)を指定してそのユーザーのレコードを取ってくる
 // 使用時
 // user := getuser(userId)
-// ログインID: user.Username パスワード: user.Password
+// ログインID: user.Username パスワード: user.Password など
 func getUser(username string) User {
   db, err := gorm.Open("sqlite3", "minutes.sqlite3")
   if err != nil{
-    panic("データベース開ません(dgUpdate)")
+    panic("データベース開ません(getUser)")
   }
   defer db.Close()
   var user User
   db.Where("username = ?", username).First(&user)
   return user
+}
+
+// パスワードの比較
+// dbPasswordはデータベースから取ってきたパスワード（暗号化済み）
+// formPasswordはログイン時に入力されたパスワード（平文）
+func comparePassword(dbPassword string, formPassword string) error {
+  return bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(password))
 }
