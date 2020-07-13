@@ -14,7 +14,6 @@ import (
 //フロントエンドのログイン動作をテストするために作った臨時のグローバル変数
 //バックエンドが完成しだい消してください
 var Temp string
-var tempUserList []string
 
 func main() {
 
@@ -130,17 +129,25 @@ func tempChallengeLogin(ctx *gin.Context){
 		return
 	}
 
-	for _,value := range tempUserList{
-		if req.UserId == value{
-			//Cookieセットのイメージ
-			//本来はクライアント側にcookieが帰る
-			Temp = req.UserId
-			ctx.JSON(http.StatusOK, gin.H{"success": true})
-			return
-		}
+	// 入力されたIDをもとにDBからレコードを取得
+	user := getUser(req.UserId)
+
+	if user.ID == 0 {
+		// DBにユーザーの情報がない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "user not exist"})
+		return
 	}
 
-	ctx.JSON(http.StatusBadRequest, gin.H{"error": "user not exist"})
+	if err := comparePassword(user.Password, req.Password); err != nil {
+		// パスワードが間違っている
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "wrong password"})
+		return
+	}
+	//Cookieセットのイメージ
+	//本来はクライアント側にcookieが帰る
+	Temp = req.UserId
+
+	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 //登録動作テストのための臨時関数
@@ -162,14 +169,12 @@ func tempChallengeRegister(ctx *gin.Context){
 		return
 	}
 
-	for _,value := range tempUserList{
-		if req.UserId == value{
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "already use this id"})
-			return
-		}
+	// DBにユーザーの情報を登録
+	if err := createUser(req.UserId, req.Password); err != nil {
+		// ログインIDがすでに使用されている
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "already use this id"})
+		return
 	}
-
-	tempUserList = append(tempUserList,req.UserId)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
