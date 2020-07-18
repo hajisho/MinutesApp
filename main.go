@@ -51,11 +51,12 @@ func main() {
 
 func returnMainPage(ctx *gin.Context) {
 	//Cookieがなければログインページにリダイレクト　のつもり
-	if(Temp==""){
-		ctx.Redirect(http.StatusMovedPermanently, "/login")
-  	ctx.Abort()
-  }
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"議事録","id":[]string{"message"}})
+	if Temp == "" {
+		ctx.Redirect(http.StatusSeeOther, "/login")
+		ctx.Abort()
+		return
+	}
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "議事録", "id": []string{"message"}})
 }
 
 //ログインページのhtmlを返す
