@@ -41,7 +41,7 @@ function GetMessage(props) {
       {data.map((item) => (
         //{}で囲むと変数展開できる
         //djangoのtemplateとかもそうだった　流行ってるんかな 便利やし
-        <p key={item.id}>{item.id}:{item.addedBy.id}:{item.message}</p>
+        <p key={item.id}>{item.id}:[{item.addedBy.name}:{item.addedBy.id}]:{item.message}</p>
       ))}
     </div>
   );

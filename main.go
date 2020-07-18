@@ -89,12 +89,13 @@ func fetchMessage(ctx *gin.Context) {
 	// データベースに保存されているメッセージの形式から、クライアントへ返す形式に変換する
 	messages := make([]ResponseMessage, len(messagesInDB))
 	for i, msg := range messagesInDB {
+		// TODO データベースでJOIN？
+		user := getUserByID(msg.UserID)
 		messages[i] = ResponseMessage{
 			ID: msg.ID,
 			AddedBy: ResponseUserPublic{
-				ID: msg.UserID,
-				// TODO ユーザーネームを返す
-				Name: "",
+				ID:   msg.UserID,
+				Name: user.Username,
 			},
 			Message: msg.Message,
 		}
