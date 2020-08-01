@@ -6,14 +6,13 @@ package main
 
 import (
 	//ginのインポート
+	"github.com/gin-gonic/gin"
+
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 )
-
-//フロントエンドのログイン動作をテストするために作った臨時のグローバル変数
-//バックエンドが完成しだい消してください
-var Temp string
 
 func main() {
 
@@ -27,6 +26,10 @@ func main() {
 
 	dbInit() //データベースマイグレート
 
+	// セッションの設定
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("mysession", store))
+
 	// / に　GETリクエストが飛んできたらhandler関数を実行
 	router.GET("/", returnMainPage)
 	// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
@@ -36,13 +39,13 @@ func main() {
 	// ログインページを返す
 	router.GET("/login", returnLoginPage)
 	// ログイン動作を司る
-	router.POST("/login", tempChallengeLogin)
+	router.POST("/login", postLogin)
 	//ユーザー登録ページを返す
 	router.GET("/register", returnRegisterPage)
 	//　ユーザー登録動作を司る
 	router.POST("/register", tempChallengeRegister)
-	//セッション情報の削除のつもり
-	router.GET("/logout", tempDeleteCookie)
+	//セッション情報の削除
+	router.GET("/logout", postLogout)
 
 	// サーバーを起動しています
 	router.Run(":10000")
@@ -50,7 +53,10 @@ func main() {
 
 func returnMainPage(ctx *gin.Context) {
 	//Cookieがなければログインページにリダイレクト　のつもり
-	if Temp == "" {
+	// 下記の関数、sessionCeckで確認しているから、実際には必要ないはず。要らなければ削除
+	session := sessions.Default(ctx)
+	user := session.Get("UserId")
+	if user == nil {
 		ctx.Redirect(http.StatusSeeOther, "/login")
 		ctx.Abort()
 		return
@@ -125,7 +131,8 @@ func handleAddMessage(ctx *gin.Context) {
 		return
 	}
 
-	user := getUser(Temp)
+	session := sessions.Default(ctx)
+	user := getUser(session.Get("UserId").(string))
 
 	//メッセージをデータベースへ追加
 	dbInsert(req.Message, user.ID)
@@ -137,47 +144,6 @@ func handleAddMessage(ctx *gin.Context) {
 type userInfo struct {
 	UserId   string `json:"userId"`
 	Password string `json:"password"`
-}
-
-//ログイン動作を司る
-//クライアント動作確認のための仮関数
-func tempChallengeLogin(ctx *gin.Context) {
-	// POST bodyからメッセージを獲得
-	req := new(userInfo)
-	err := ctx.BindJSON(req)
-
-	if err != nil {
-		// メッセージがJSONではない、もしくは、content-typeがapplication/jsonになっていない
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request as JSON format is expected"})
-		return
-	}
-
-	if req.UserId == "" || req.Password == "" {
-		// メッセージがない、無効なリクエスト
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to parameter 'userId' or 'password' being empty"})
-		// 帰ることを忘れない
-		return
-	}
-
-	// 入力されたIDをもとにDBからレコードを取得
-	user := getUser(req.UserId)
-
-	if user.ID == 0 {
-		// DBにユーザーの情報がない
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "user not exist"})
-		return
-	}
-
-	if err := comparePassword(user.Password, req.Password); err != nil {
-		// パスワードが間違っている
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "wrong password"})
-		return
-	}
-	//Cookieセットのイメージ
-	//本来はクライアント側にcookieが帰る
-	Temp = req.UserId
-
-	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 //登録動作テストのための臨時関数
@@ -209,9 +175,56 @@ func tempChallengeRegister(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-//ログアウト動作のつもり
-//動作未確認
-func tempDeleteCookie(ctx *gin.Context) {
-	Temp = ""
+//ログイン処理
+func postLogin(ctx *gin.Context) {
+	// POST bodyからメッセージを獲得
+	req := new(userInfo)
+	err := ctx.BindJSON(req)
+
+	if err != nil {
+		// メッセージがJSONではない、もしくは、content-typeがapplication/jsonになっていない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request as JSON format is expected"})
+		return
+	}
+
+	if req.UserId == "" || req.Password == "" {
+		// メッセージがない、無効なリクエスト
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to parameter 'userId' or 'password' being empty"})
+		// 帰ることを忘れない
+		return
+	}
+
+	// 入力されたIDをもとにDBからレコードを取得
+	user := getUser(req.UserId)
+
+	if user.ID == 0 {
+		// DBにユーザーの情報がない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "user not exist"})
+		return
+	}
+
+	if err := comparePassword(user.Password, req.Password); err != nil {
+		// パスワードが間違っている
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "wrong password"})
+		return
+	}
+
+	//セッションにデータを格納する
+	session := sessions.Default(ctx)
+	session.Set("UserId", user.Username)
+	session.Save()
+
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+//ログアウト処理
+func postLogout(ctx *gin.Context) {
+
+	//セッションからデータを破棄する
+	session := sessions.Default(ctx)
+	session.Clear()
+	session.Save()
+
+	ctx.Redirect(http.StatusSeeOther, "/login")
+
 }
