@@ -7,8 +7,8 @@ package main
 import (
 	//ginのインポート
 	"net/http"
-	"github.com/gin-gonic/gin"
 
+	"github.com/gin-gonic/gin"
 )
 
 //フロントエンドのログイン動作をテストするために作った臨時のグローバル変数
@@ -33,21 +33,20 @@ func main() {
 	router.GET("/message", fetchMessage)
 	// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
 	router.POST("/add_message", handleAddMessage)
-  // ログインページを返す
-	router.GET("/login",returnLoginPage)
-  // ログイン動作を司る
-	router.POST("/login",tempChallengeLogin)
+	// ログインページを返す
+	router.GET("/login", returnLoginPage)
+	// ログイン動作を司る
+	router.POST("/login", tempChallengeLogin)
 	//ユーザー登録ページを返す
-	router.GET("/register",returnRegisterPage)
+	router.GET("/register", returnRegisterPage)
 	//　ユーザー登録動作を司る
-	router.POST("/register",tempChallengeRegister)
-  //セッション情報の削除のつもり
-	router.GET("/logout",tempDeleteCookie)
+	router.POST("/register", tempChallengeRegister)
+	//セッション情報の削除のつもり
+	router.GET("/logout", tempDeleteCookie)
 
 	// サーバーを起動しています
 	router.Run(":10000")
 }
-
 
 func returnMainPage(ctx *gin.Context) {
 	//Cookieがなければログインページにリダイレクト　のつもり
@@ -60,19 +59,47 @@ func returnMainPage(ctx *gin.Context) {
 }
 
 //ログインページのhtmlを返す
-func returnLoginPage(ctx *gin.Context){
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"loginページ","id":[]string{"login","serverMessage"}})
+func returnLoginPage(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "loginページ", "id": []string{"login", "serverMessage"}})
 }
 
 //ユーザー登録ページのhtmlを返す
-func returnRegisterPage(ctx *gin.Context){
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"ユーザー登録ページ","id":[]string{"register","serverMessage"}})
+func returnRegisterPage(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "ユーザー登録ページ", "id": []string{"register", "serverMessage"}})
 }
 
+// ResponseUserPublic は、公開ユーザー情報がクライアントへ返される時の形式です。
+// JSON形式へマーシャルできます。
+type ResponseUserPublic struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+}
+
+// ResponseMessage は、メッセージがクライアントへ返される時の形式です。
+// JSON形式へマーシャルできます。
+type ResponseMessage struct {
+	ID      uint               `json:"id"`
+	AddedBy ResponseUserPublic `json:"addedBy"`
+	Message string             `json:"message"`
+}
 
 //messagesに含まれるものを jsonで返す
 func fetchMessage(ctx *gin.Context) {
-	messages := dbGetAll()
+	messagesInDB := dbGetAll()
+	// データベースに保存されているメッセージの形式から、クライアントへ返す形式に変換する
+	messages := make([]ResponseMessage, len(messagesInDB))
+	for i, msg := range messagesInDB {
+		// TODO データベースでJOIN？
+		user := getUserByID(msg.UserID)
+		messages[i] = ResponseMessage{
+			ID: msg.ID,
+			AddedBy: ResponseUserPublic{
+				ID:   msg.UserID,
+				Name: user.Username,
+			},
+			Message: msg.Message,
+		}
+	}
 	ctx.JSON(http.StatusOK, messages)
 }
 
@@ -98,21 +125,23 @@ func handleAddMessage(ctx *gin.Context) {
 		return
 	}
 
+	user := getUser(Temp)
+
 	//メッセージをデータベースへ追加
-	dbInsert(req.Message)
+	dbInsert(req.Message, user.ID)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 //ログイン試行時にクライアントから送られてくるフォーマット
 type userInfo struct {
-	UserId string `json:"userId"`
+	UserId   string `json:"userId"`
 	Password string `json:"password"`
 }
 
 //ログイン動作を司る
 //クライアント動作確認のための仮関数
-func tempChallengeLogin(ctx *gin.Context){
+func tempChallengeLogin(ctx *gin.Context) {
 	// POST bodyからメッセージを獲得
 	req := new(userInfo)
 	err := ctx.BindJSON(req)
@@ -152,7 +181,7 @@ func tempChallengeLogin(ctx *gin.Context){
 }
 
 //登録動作テストのための臨時関数
-func tempChallengeRegister(ctx *gin.Context){
+func tempChallengeRegister(ctx *gin.Context) {
 	// POST bodyからメッセージを獲得
 	req := new(userInfo)
 	err := ctx.BindJSON(req)
@@ -182,7 +211,7 @@ func tempChallengeRegister(ctx *gin.Context){
 
 //ログアウト動作のつもり
 //動作未確認
-func tempDeleteCookie(ctx *gin.Context){
+func tempDeleteCookie(ctx *gin.Context) {
 	Temp = ""
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }

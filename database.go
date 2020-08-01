@@ -1,9 +1,9 @@
 package main
 
-import(
-  "github.com/jinzhu/gorm"
-  "golang.org/x/crypto/bcrypt"  // パスワードを暗号化する際に使う
-  _ "github.com/mattn/go-sqlite3" //DBのパッケージだが、操作はGORMで行うため、importだけして使わない
+import (
+	"github.com/jinzhu/gorm"
+	_ "github.com/mattn/go-sqlite3" //DBのパッケージだが、操作はGORMで行うため、importだけして使わない
+	"golang.org/x/crypto/bcrypt"    // パスワードを暗号化する際に使う
 )
 
 /*
@@ -21,29 +21,30 @@ updated_at → UpdatedAt
 deleted_at → DeletedAt
 */
 // テーブル名：messages -->　テーブル名は自動で複数形になる
-type Message struct{
-  gorm.Model
-  Message string
-  MeetingID int
-  UserID int
+type Message struct {
+	gorm.Model
+	Message   string
+	MeetingID int
+	UserID    uint
 }
 
 type User struct {
-  gorm.Model
-  Username string `gorm:"unique;not null"`
-  Password string `gorm:"not null"`
+	gorm.Model
+	Username string `gorm:"unique;not null"`
+	Password string `gorm:"not null"`
 }
 
 type Meeting struct {
-  gorm.Model
-  Name string
+	gorm.Model
+	Name string
 }
 
 type Entry struct {
-  gorm.Model
-  MeetingID int
-  UserID int
+	gorm.Model
+	MeetingID int
+	UserID    uint
 }
+
 /*
 DBの内容
 (ID,作成日,更新日,削除日のカラムは全てに入っている)
@@ -63,111 +64,127 @@ DBの内容
 
 //DBマイグレート
 //main関数の最初でdbInit()を呼ぶことでデータベースマイグレート
-func dbInit(){
-  db, err := gorm.Open("sqlite3", "minutes.sqlite3") //第一引数：使用するDBのデバイス。第二引数：ファイル名
-  if err != nil{
-    panic("データベース開ません(dbinit)")
-  }
-  db.AutoMigrate(&User{}, &Message{}, Meeting{}, &Entry{}) //ファイルがなければ、生成を行う。すでにあればマイグレート。すでにあってマイグレートされていれば何も行わない
-  defer db.Close()
+func dbInit() {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3") //第一引数：使用するDBのデバイス。第二引数：ファイル名
+	if err != nil {
+		panic("データベース開ません(dbinit)")
+	}
+	db.AutoMigrate(&User{}, &Message{}, Meeting{}, &Entry{}) //ファイルがなければ、生成を行う。すでにあればマイグレート。すでにあってマイグレートされていれば何も行わない
+	defer db.Close()
 }
 
 //DB追加
-//追加したいメッセージは、dbInsert(message.Message)のような感じで呼べば追加される
-func dbInsert(message string){
-  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
-  if err != nil{
-    panic("データベース開ません(dbInsert)")
-  }
-  db.Create(&Message{Message: message})
-  defer db.Close()
+//追加したいメッセージは、dbInsert(message.Message, userID)のような感じで呼べば追加される
+func dbInsert(message string, userID uint) {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(dbInsert)")
+	}
+	db.Create(&Message{
+		Message: message,
+		UserID:  userID,
+	})
+	defer db.Close()
 }
 
 //DB全取得
 //dbGetAll()と呼ぶことで、データベース内の全てのMessageオブジェクトが返される
-func dbGetAll() []Message{
-  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
-  if err != nil{
-    panic("データベース開ません(dbGetAll)")
-  }
-  var messages []Message
-  db.Order("created_at desc").Find(&messages) //db.Find(&messages)で構造体Messageに対するテーブルの要素全てを取得し、それをOrder("created_at desc")で新しいものが上に来るように並び替えている
-  db.Close()
-  return messages
+func dbGetAll() []Message {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(dbGetAll)")
+	}
+	var messages []Message
+	db.Order("created_at desc").Find(&messages) //db.Find(&messages)で構造体Messageに対するテーブルの要素全てを取得し、それをOrder("created_at desc")で新しいものが上に来るように並び替えている
+	db.Close()
+	return messages
 }
 
 //DB一つ取得
 //idを与えることで、該当するMessageオブジェクトが一つ返される
-func dbGetOne(id int) Message{
-  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
-  if err != nil{
-    panic("データベース開ません(dbGetOne)")
-  }
-  var message Message
-  db.First(&message, id)
-  db.Close()
-  return message
+func dbGetOne(id int) Message {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(dbGetOne)")
+	}
+	var message Message
+	db.First(&message, id)
+	db.Close()
+	return message
 }
 
 //DB更新
 //idとmessageを与えることで、該当するidのMessageオブジェクトのMessageが更新される
-func dbUpdate(id int, update_message string){
-  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
-  if err != nil{
-    panic("データベース開ません(dgUpdate)")
-  }
-  var message Message
-  db.First(&message, id)
-  message.Message = update_message
-  db.Save(&message)
-  db.Close()
+func dbUpdate(id int, update_message string) {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(dgUpdate)")
+	}
+	var message Message
+	db.First(&message, id)
+	message.Message = update_message
+	db.Save(&message)
+	db.Close()
 }
 
 //DB削除
 //指定したidのMessageオブジェクトが削除される
-func dbDelete(id int){
-  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
-  if err != nil{
-    panic("データベース開ません(dbDelete)")
-  }
-  var message Message
-  db.First(&message, id)
-  db.Delete(&message)
-  db.Close()
+func dbDelete(id int) {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(dbDelete)")
+	}
+	var message Message
+	db.First(&message, id)
+	db.Delete(&message)
+	db.Close()
 }
 
 // ユーザー登録処理
 func createUser(username string, password string) error {
-  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
-  if err != nil{
-    panic("データベース開ません(createUser)")
-  }
-  defer db.Close()
-  // パスワード暗号化
-  passwordEncrypt, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-  // Insert処理
-  if err := db.Create(&User{Username: username, Password: string(passwordEncrypt)}).Error; err != nil {
-    return err
-  }
-  return nil
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(createUser)")
+	}
+	defer db.Close()
+	// パスワード暗号化
+	passwordEncrypt, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// Insert処理
+	if err := db.Create(&User{Username: username, Password: string(passwordEncrypt)}).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // ユーザーネーム(ログインID)を指定してそのユーザーのレコードを取ってくる
 // 指定したユーザーのレコードがない場合は、IDが0のレコードを返す
 func getUser(username string) User {
-  db, err := gorm.Open("sqlite3", "minutes.sqlite3")
-  if err != nil{
-    panic("データベース開ません(getUser)")
-  }
-  defer db.Close()
-  var user User
-  db.Where(&User{Username: username}).Find(&user)
-  return user
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(getUser)")
+	}
+	defer db.Close()
+	var user User
+	db.Where(&User{Username: username}).Find(&user)
+	return user
+}
+
+// getUserById は、指定されたIDを持つユーザーを一つ返します。
+// ユーザーが存在しない場合、IDが0のレコードが返ります。
+func getUserByID(id uint) User {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(getUserById)")
+	}
+	defer db.Close()
+	var user User
+	db.First(&user, id)
+	return user
 }
 
 // パスワードの比較
 // dbPasswordはデータベースから取ってきたパスワード（暗号化済み）
 // formPasswordはログイン時に入力されたパスワード（平文）
 func comparePassword(dbPassword string, formPassword string) error {
-  return bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(formPassword))
+	return bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(formPassword))
 }

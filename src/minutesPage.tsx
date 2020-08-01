@@ -5,9 +5,15 @@ import PropTypes from 'prop-types';
 
 import MessagePostForm from './messageForm';
 
+type User = {
+  id: number,
+  name: string,
+};
+
 type Message = {
-  ID: number,
-  Message: string,
+  addedBy: User,
+  id: number,
+  message: string,
 };
 
 type GetMessageResult = Message[];
@@ -35,7 +41,7 @@ function GetMessage(props) {
       {data.map((item) => (
         //{}で囲むと変数展開できる
         //djangoのtemplateとかもそうだった　流行ってるんかな 便利やし
-        <p>{item.ID}:{item.Message}</p>
+        <p key={item.id}>{item.id}:[{item.addedBy.name}:{item.addedBy.id}]:{item.message}</p>
       ))}
     </div>
   );
