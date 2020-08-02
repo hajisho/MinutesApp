@@ -1,0 +1,12 @@
+image: node:latest
+
+stages:
+    - build
+
+before_script:
+    - npm ci
+
+build:
+  stage: build
+  script:
+    - npx gulp
