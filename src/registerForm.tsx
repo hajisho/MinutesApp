@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { createStyles, makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
@@ -11,8 +11,7 @@ import Alert from '@material-ui/lab/Alert';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const API_URL_LOGIN = '/register';
 
-function RegisterPostForm(props) {
-const useStyles = makeStyles((theme: Theme) =>
+const useStyles = makeStyles((theme) =>
   createStyles({
     root: {
       '& > *': {
@@ -24,9 +23,10 @@ const useStyles = makeStyles((theme: Theme) =>
         marginTop: theme.spacing(2),
       },
     },
-  }),
+  })
 );
 
+export default function RegisterPostForm(props) {
   // テキストボックス内のメッセージ
   const [userId, setUserId] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -34,7 +34,6 @@ const useStyles = makeStyles((theme: Theme) =>
   const [working, setWorking] = useState<boolean>(false);
 
   const classes = useStyles();
-  const [progress, setProgress] = React.useState(0);
 
   const handleSubmit = async (event: React.FormEvent) => {
     // FIXME もしかしたら、非同期なため、これが効く前にボタンをクリックできるかもしれない
@@ -61,30 +60,83 @@ const useStyles = makeStyles((theme: Theme) =>
       const obj = await res.json();
       if ('error' in obj) {
         // サーバーからエラーが返却された
-        ReactDOM.render(<div className={classes.root}><Alert variant="outlined" severity="error" onClose={() => {
-          ReactDOM.render(<div></div>, document.getElementById('serverMessage'));
-        }}>{obj.error}</Alert></div>, document.getElementById('serverMessage'));
-        throw new Error(`An error occurred on querying ${API_URL_LOGIN}, the response included error message: ${obj.error}`);
+        ReactDOM.render(
+          <div className={classes.root}>
+            <Alert
+              variant="outlined"
+              severity="error"
+              onClose={() => {
+                ReactDOM.render(
+                  <div />,
+                  document.getElementById('serverMessage')
+                );
+              }}
+            >
+              {obj.error}
+            </Alert>
+          </div>,
+          document.getElementById('serverMessage')
+        );
+        throw new Error(
+          `An error occurred on querying ${API_URL_LOGIN}, the response included error message: ${obj.error}`
+        );
       }
       if (!('success' in obj)) {
         // サーバーからsuccessメンバが含まれたJSONが帰るはずだが、見当たらなかった
-        ReactDOM.render(<div className={classes.root}><Alert variant="outlined" severity="error" onClose={() => {
-          ReactDOM.render(<div></div>, document.getElementById('serverMessage'));
-        }}>Error</Alert></div>, document.getElementById('serverMessage'));
-        throw new Error(`An response from ${API_URL_LOGIN} unexpectedly did not have 'success' member`);
+        ReactDOM.render(
+          <div className={classes.root}>
+            <Alert
+              variant="outlined"
+              severity="error"
+              onClose={() => {
+                ReactDOM.render(
+                  <div />,
+                  document.getElementById('serverMessage')
+                );
+              }}
+            >
+              Error
+            </Alert>
+          </div>,
+          document.getElementById('serverMessage')
+        );
+        throw new Error(
+          `An response from ${API_URL_LOGIN} unexpectedly did not have 'success' member`
+        );
       }
       if (obj.success !== true) {
-        ReactDOM.render(<div className={classes.root}><Alert variant="outlined" severity="error" onClose={() => {
-          ReactDOM.render(<div></div>, document.getElementById('serverMessage'));
-        }}>Error</Alert></div>, document.getElementById('serverMessage'));
-        throw new Error(`An response from ${API_URL_LOGIN} returned non true value as 'success' member`);
+        ReactDOM.render(
+          <div className={classes.root}>
+            <Alert
+              variant="outlined"
+              severity="error"
+              onClose={() => {
+                ReactDOM.render(
+                  <div />,
+                  document.getElementById('serverMessage')
+                );
+              }}
+            >
+              Error
+            </Alert>
+          </div>,
+          document.getElementById('serverMessage')
+        );
+        throw new Error(
+          `An response from ${API_URL_LOGIN} returned non true value as 'success' member`
+        );
       }
 
       // 要求は成功
-      ReactDOM.render(<div className={classes.root}>
-        <Alert variant="outlined" severity="success">登録完了! 3秒後にログインページへ推移</Alert>
-        <CircularProgress />
-        </div>, document.getElementById('serverMessage'));
+      ReactDOM.render(
+        <div className={classes.root}>
+          <Alert variant="outlined" severity="success">
+            登録完了! 3秒後にログインページへ推移
+          </Alert>
+          <CircularProgress />
+        </div>,
+        document.getElementById('serverMessage')
+      );
       // リスナ関数を呼ぶ
       props.onSubmitSuccessful();
 
@@ -100,17 +152,30 @@ const useStyles = makeStyles((theme: Theme) =>
   return (
     <>
       <form className={classes.root} noValidate autoComplete="off">
-      <TextField id="standard-basic" label="ユーザーID" value={userId}
-      type='textbox'
-      onChange={(event) => setUserId(event.target.value)}/>
-      <p></p>
-      <TextField id="standard-basic" label="パスワード" value={password}
-        type='textbox'
-        onChange={(event) => setPassword(event.target.value)}/>
-      <p></p>
-      <Button variant="contained" color="primary"　disabled={working} onClick={handleSubmit}>
-        登録
-      </Button>
+        <TextField
+          id="standard-basic"
+          label="ユーザーID"
+          value={userId}
+          type="textbox"
+          onChange={(event) => setUserId(event.target.value)}
+        />
+        <p />
+        <TextField
+          id="standard-basic"
+          label="パスワード"
+          value={password}
+          type="textbox"
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        <p />
+        <Button
+          variant="contained"
+          color="primary"
+          disabled={working}
+          onClick={handleSubmit}
+        >
+          登録
+        </Button>
       </form>
     </>
   );
@@ -123,10 +188,3 @@ RegisterPostForm.propTypes = {
 RegisterPostForm.defaultProps = {
   onSubmitSuccessful: () => {},
 };
-
-//
-// //webpackでバンドルしている関係で存在していないIDが指定される場合がある
-// //エラーをそのままにしておくと、エラー以後のレンダリングがされない
-// if(document.getElementById('register') != null){
-//   ReactDOM.render(<RegisterPostForm />, document.getElementById('register'));
-// }

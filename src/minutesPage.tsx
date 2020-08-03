@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
-import { fade, makeStyles, Theme, createStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
-import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
@@ -15,31 +15,11 @@ import AccountCircle from '@material-ui/icons/AccountCircle';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const API_URL_ADD_MESSAGE = '/add_message';
 
-
 export default function MessagePostForm(props) {
   // テキストボックス内のメッセージ
   const [message, setMessage] = useState<string>('');
   // サーバがへメッセージ追加のリクエストを処理中ならtrue、でないならfalseの状態
   const [working, setWorking] = useState<boolean>(false);
-
-type Message = {
-  ID: number,
-  Message: string,
-};
-const useStyles = makeStyles((theme: Theme) => ({
-  header: {
-    flexGrow: 1,
-  },
-  menuButton: {
-    marginRight: theme.spacing(2),
-  },
-  title: {
-    flexGrow: 1,
-  },
-}));
-
-type GetMessageResult = Message[];
-
 
   const handleSubmit = async (event: React.FormEvent) => {
     // FIXME もしかしたら、非同期なため、これが効く前にボタンをクリックできるかもしれない
@@ -110,6 +90,49 @@ MessagePostForm.defaultProps = {
   onSubmitSuccessful: () => {},
 };
 
+function GetMessage(props) {
+  type User = {
+    id: number;
+    name: string;
+  };
+
+  type Message = {
+    addedBy: User;
+    id: number;
+    message: string;
+  };
+
+  type GetMessageResult = Message[];
+  const [data, setData] = useState<GetMessageResult>([]);
+
+  useEffect(() => {
+    // ルート /message に対して GETリクエストを送る
+    // 帰ってきたものをjsonにしてuseStateに突っ込む
+    fetch('/message')
+      .then((res) => res.json())
+      .then(setData);
+  }, [props.forceUpdate]);
+
+  return (
+    // タグが複数できる場合は何らかのタグで全体を囲う
+    <div>
+      {data.map((item) => (
+        <p key={item.id}>
+          {item.id}:{item.addedBy.id}:{item.message}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+GetMessage.propTypes = {
+  // このランダム値を変更することで、強制的にサーバーからメッセージを取得させ、最新の情報を入手させる
+  forceUpdate: PropTypes.number,
+};
+
+GetMessage.defaultProps = {
+  forceUpdate: Math.random(),
+};
 
 function MessageSection() {
   const [randomValue, setRandomValue] = useState<number>(Math.random());
@@ -124,8 +147,20 @@ function MessageSection() {
       <GetMessage forceUpdate={randomValue} />
       <MessagePostForm onSubmitSuccessful={onMessageAdded} />
     </>
-  )
+  );
 }
+
+const useStyles = makeStyles((theme) => ({
+  header: {
+    flexGrow: 1,
+  },
+  menuButton: {
+    marginRight: theme.spacing(2),
+  },
+  title: {
+    flexGrow: 1,
+  },
+}));
 
 function MinuteAppBar() {
   const classes = useStyles();
@@ -161,22 +196,27 @@ function MinuteAppBar() {
     <div className={classes.header}>
       <AppBar position="static">
         <Toolbar>
-          <IconButton edge="start" className={classes.menuButton} color="inherit" aria-label="menu">
+          <IconButton
+            edge="start"
+            className={classes.menuButton}
+            color="inherit"
+            aria-label="menu"
+          >
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" className={classes.title}>
             Minutes Application
           </Typography>
           <IconButton
-              edge="end"
-              aria-label="account of current user"
-              aria-controls={menuId}
-              aria-haspopup="true"
-              onClick={handleProfileMenuOpen}
-              color="inherit"
-            >
-              <AccountCircle />
-            </IconButton>
+            edge="end"
+            aria-label="account of current user"
+            aria-controls={menuId}
+            aria-haspopup="true"
+            onClick={handleProfileMenuOpen}
+            color="inherit"
+          >
+            <AccountCircle />
+          </IconButton>
         </Toolbar>
       </AppBar>
       {renderMenu}
@@ -184,12 +224,11 @@ function MinuteAppBar() {
   );
 }
 
-
-//webpackでバンドルしている関係で存在していないIDが指定される場合がある
-//エラーをそのままにしておくと、エラー以後のレンダリングがされない
-if(document.getElementById('message') != null){
+// webpackでバンドルしている関係で存在していないIDが指定される場合がある
+// エラーをそのままにしておくと、エラー以後のレンダリングがされない
+if (document.getElementById('message') != null) {
   ReactDOM.render(<MessageSection />, document.getElementById('message'));
 }
-if(document.getElementById('minuteHeader') != null){
+if (document.getElementById('minuteHeader') != null) {
   ReactDOM.render(<MinuteAppBar />, document.getElementById('minuteHeader'));
 }

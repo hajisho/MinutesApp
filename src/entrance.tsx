@@ -1,17 +1,14 @@
-"use strict"
-import React, { useEffect, useState } from "react"
-import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
+import React from 'react';
+import { makeStyles } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
 import Typography from '@material-ui/core/Typography';
 import ReactDOM from 'react-dom';
-import PropTypes from 'prop-types';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import Toolbar from '@material-ui/core/Toolbar';
 
-
-const useStyles = makeStyles((theme: Theme) => ({
+const useStyles = makeStyles((theme) => ({
   header: {
     flexGrow: 1,
   },
@@ -24,9 +21,6 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 function EntranceSection() {
-  const classes = useStyles();
-  const theme = useTheme();
-
   return (
     <div>
       <h1>Welcome to Minutes Application</h1>
@@ -37,33 +31,42 @@ function EntranceSection() {
 function EntranceAppBar() {
   const classes = useStyles();
 
-  const toLogin = (event: React.FormEvent) => {
-    location.href = "/login";
-  }
+  const toLogin = () => {
+    window.location.href = '/login';
+  };
 
   return (
     <div className={classes.header}>
       <AppBar position="static">
         <Toolbar>
-          <IconButton edge="start" className={classes.menuButton} color="inherit" aria-label="menu">
+          <IconButton
+            edge="start"
+            className={classes.menuButton}
+            color="inherit"
+            aria-label="menu"
+          >
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" className={classes.title}>
             Minutes Application
           </Typography>
-          <Button color="inherit" onClick={toLogin}>Login</Button>
+          <Button color="inherit" onClick={toLogin}>
+            Login
+          </Button>
         </Toolbar>
       </AppBar>
     </div>
   );
 }
 
-
-//webpackでバンドルしている関係で存在していないIDが指定される場合がある
-//エラーをそのままにしておくと、エラー以後のレンダリングがされない
-if(document.getElementById('entrance') != null){
+// webpackでバンドルしている関係で存在していないIDが指定される場合がある
+// エラーをそのままにしておくと、エラー以後のレンダリングがされない
+if (document.getElementById('entrance') != null) {
   ReactDOM.render(<EntranceSection />, document.getElementById('entrance'));
 }
-if(document.getElementById('entranceHeader') != null){
-  ReactDOM.render(<EntranceAppBar />, document.getElementById('entranceHeader'));
+if (document.getElementById('entranceHeader') != null) {
+  ReactDOM.render(
+    <EntranceAppBar />,
+    document.getElementById('entranceHeader')
+  );
 }

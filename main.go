@@ -59,11 +59,11 @@ func returnMainPage(ctx *gin.Context) {
 	session := sessions.Default(ctx)
 	user := session.Get("UserId")
 	if user == nil {
-		ctx.Redirect(http.StatusSeeOther, "/login")
+		ctx.Redirect(http.StatusSeeOther, "/entrance")
 		ctx.Abort()
 		return
 	}
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "議事録", "id": []string{"message"}})
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "議事録","header": "minuteHeader", "id": []string{"message"}})
 }
 // ResponseUserPublic は、公開ユーザー情報がクライアントへ返される時の形式です。
 // JSON形式へマーシャルできます。
@@ -229,6 +229,6 @@ func postLogout(ctx *gin.Context) {
 	session.Clear()
 	session.Save()
 
-	ctx.Redirect(http.StatusSeeOther, "/login")
+	ctx.Redirect(http.StatusSeeOther, "/entrance")
 
 }
