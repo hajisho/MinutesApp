@@ -1,80 +1,81 @@
-"use strict"
-import React, { useEffect, useState } from "react"
-import ReactDOM from 'react-dom'
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
-import MessagePostForm from './messageForm';
+// メッセージ追加のAPIへのURL
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const API_URL_ADD_MESSAGE = '/add_message';
 
-type User = {
-  id: number,
-  name: string,
-};
+export default function MessagePostForm(props) {
+  // テキストボックス内のメッセージ
+  const [message, setMessage] = useState<string>('');
+  // サーバがへメッセージ追加のリクエストを処理中ならtrue、でないならfalseの状態
+  const [working, setWorking] = useState<boolean>(false);
 
-type Message = {
-  addedBy: User,
-  id: number,
-  message: string,
-};
+  const handleSubmit = async (event: React.FormEvent) => {
+    // FIXME もしかしたら、非同期なため、これが効く前にボタンをクリックできるかもしれない
+    setWorking(true);
+    try {
+      // ページが更新されないようにする
+      event.preventDefault();
 
-type GetMessageResult = Message[];
-
-function GetMessage(props) {
-  //このコードではページが表示された時点でこの関数が走るのでuseStateの初期値を与えないと undefined error
-  //https://www.debuggr.io/react-map-of-undefined/
-  //非同期の結果を残すためのもの？
-  //reactは非同期得意ではなかったらしいが, react hook　が出てきて改善したらしい
-  const [data, setData] = useState<GetMessageResult>([]);
-
-  useEffect(() => {
-    // ルート /message に対して GETリクエストを送る
-    // 帰ってきたものをjsonにしてuseStateに突っ込む
-    fetch("/message")
-      .then(res => res.json())
-      .then(setData)
-      .catch(console.log);
-  }, [props.forceUpdate]);
-
-
-  return (
-    //タグが複数できる場合は何らかのタグで全体を囲う
-    <div>
-      {data.map((item) => (
-        //{}で囲むと変数展開できる
-        //djangoのtemplateとかもそうだった　流行ってるんかな 便利やし
-        <p key={item.id}>{item.id}:[{item.addedBy.name}:{item.addedBy.id}]:{item.message}</p>
-      ))}
-    </div>
-  );
-}
-
-GetMessage.propTypes = {
-  // このランダム値を変更することで、強制的にサーバーからメッセージを取得させ、最新の情報を入手させる
-  forceUpdate: PropTypes.number,
-};
-
-GetMessage.defaultProps = {
-  forceUpdate: Math.random(),
-};
-
-function MessageSection() {
-  const [randomValue, setRandomValue] = useState<number>(Math.random());
-
-  const onMessageAdded = () => {
-    // フォームによってメッセージが追加されたら、メッセージ一覧を更新する
-    setRandomValue(Math.random());
+      // Reactのハンドラはasyncにできる
+      const res = await fetch(API_URL_ADD_MESSAGE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // 相応しくないかも
+        // same-originを使うべき？
+        credentials: 'include',
+        body: JSON.stringify({ message }),
+      });
+      const obj = await res.json();
+      if ('error' in obj) {
+        // サーバーからエラーが返却された
+        throw new Error(
+          `An error occurred on querying ${API_URL_ADD_MESSAGE}, the response included error message: ${obj.error}`
+        );
+      }
+      if (!('success' in obj)) {
+        // サーバーからsuccessメンバが含まれたJSONが帰るはずだが、見当たらなかった
+        throw new Error(
+          `An response from ${API_URL_ADD_MESSAGE} unexpectedly did not have 'success' member`
+        );
+      }
+      if (obj.success !== true) {
+        throw new Error(
+          `An response from ${API_URL_ADD_MESSAGE} returned non true value as 'success' member`
+        );
+      }
+      // 要求は成功
+      // リスナ関数を呼ぶ
+      props.onSubmitSuccessful();
+    } finally {
+      setWorking(false);
+      setMessage('');
+    }
   };
 
   return (
-    <>
-      <GetMessage forceUpdate={randomValue} />
-      <MessagePostForm onSubmitSuccessful={onMessageAdded} />
-    </>
-  )
+    <form onSubmit={handleSubmit}>
+      <input
+        value={message}
+        type="textbox"
+        placeholder="ここに追加したいメッセージを入力します"
+        onChange={(event) => setMessage(event.target.value)}
+      />
+      <button type="submit" disabled={working}>
+        追加
+      </button>
+    </form>
+  );
 }
 
+MessagePostForm.propTypes = {
+  // 新しいメッセージの追加が正常に完了したら呼ばれる関数
+  onSubmitSuccessful: PropTypes.func,
+};
 
-//webpackでバンドルしている関係で存在していないIDが指定される場合がある
-//エラーをそのままにしておくと、エラー以後のレンダリングがされない
-if(document.getElementById('message') != null){
-  ReactDOM.render(<MessageSection />, document.getElementById('message'));
-}
+MessagePostForm.defaultProps = {
+  onSubmitSuccessful: () => {},
+};

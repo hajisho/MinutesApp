@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
 // メッセージ追加のAPIへのURL
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const API_URL_ADD_MESSAGE = '/add_message';
 
 export default function MessagePostForm(props) {
@@ -12,7 +13,7 @@ export default function MessagePostForm(props) {
 
   const handleSubmit = async (event: React.FormEvent) => {
     // FIXME もしかしたら、非同期なため、これが効く前にボタンをクリックできるかもしれない
-    setWorking(true)
+    setWorking(true);
     try {
       // ページが更新されないようにする
       event.preventDefault();
@@ -23,43 +24,51 @@ export default function MessagePostForm(props) {
         headers: {
           'Content-Type': 'application/json',
         },
-        //相応しくないかも
-        //same-originを使うべき？
+        // 相応しくないかも
+        // same-originを使うべき？
         credentials: 'include',
         body: JSON.stringify({ message }),
       });
       const obj = await res.json();
       if ('error' in obj) {
         // サーバーからエラーが返却された
-        throw new Error(`An error occurred on querying ${API_URL_ADD_MESSAGE}, the response included error message: ${obj.error}`);
+        throw new Error(
+          `An error occurred on querying ${API_URL_ADD_MESSAGE}, the response included error message: ${obj.error}`
+        );
       }
       if (!('success' in obj)) {
         // サーバーからsuccessメンバが含まれたJSONが帰るはずだが、見当たらなかった
-        throw new Error(`An response from ${API_URL_ADD_MESSAGE} unexpectedly did not have 'success' member`);
+        throw new Error(
+          `An response from ${API_URL_ADD_MESSAGE} unexpectedly did not have 'success' member`
+        );
       }
       if (obj.success !== true) {
-        throw new Error(`An response from ${API_URL_ADD_MESSAGE} returned non true value as 'success' member`);
+        throw new Error(
+          `An response from ${API_URL_ADD_MESSAGE} returned non true value as 'success' member`
+        );
       }
       // 要求は成功
       // リスナ関数を呼ぶ
       props.onSubmitSuccessful();
     } finally {
       setWorking(false);
-      setMessage("");
+      setMessage('');
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
       <input
-        value = {message}
-        type='textbox'
-        placeholder='ここに追加したいメッセージを入力します'
+        value={message}
+        type="textbox"
+        placeholder="ここに追加したいメッセージを入力します"
         onChange={(event) => setMessage(event.target.value)}
       />
-      <button disabled={working}>追加</button>
+      <button type="button" disabled={working}>
+        追加
+      </button>
     </form>
-  )
+  );
 }
 
 MessagePostForm.propTypes = {
