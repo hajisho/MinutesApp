@@ -47,6 +47,8 @@ func main() {
 	//セッション情報の削除
 	router.GET("/logout", postLogout)
 
+	router.GET("/entrance", returnEntrancePage)
+
 	// サーバーを起動しています
 	router.Run(":10000")
 }
@@ -57,23 +59,12 @@ func returnMainPage(ctx *gin.Context) {
 	session := sessions.Default(ctx)
 	user := session.Get("UserId")
 	if user == nil {
-		ctx.Redirect(http.StatusSeeOther, "/login")
+		ctx.Redirect(http.StatusSeeOther, "/entrance")
 		ctx.Abort()
 		return
 	}
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "議事録", "id": []string{"message"}})
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "議事録","header": "minuteHeader", "id": []string{"message"}})
 }
-
-//ログインページのhtmlを返す
-func returnLoginPage(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "loginページ", "id": []string{"login", "serverMessage"}})
-}
-
-//ユーザー登録ページのhtmlを返す
-func returnRegisterPage(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "ユーザー登録ページ", "id": []string{"register", "serverMessage"}})
-}
-
 // ResponseUserPublic は、公開ユーザー情報がクライアントへ返される時の形式です。
 // JSON形式へマーシャルできます。
 type ResponseUserPublic struct {
@@ -87,6 +78,19 @@ type ResponseMessage struct {
 	ID      uint               `json:"id"`
 	AddedBy ResponseUserPublic `json:"addedBy"`
 	Message string             `json:"message"`
+}
+//ログインページのhtmlを返す
+func returnLoginPage(ctx *gin.Context){
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"Login and Register","header": "loginHeader","id":[]string{"LoginAndRegister","serverMessage"}})
+}
+
+//ユーザー登録ページのhtmlを返す
+func returnRegisterPage(ctx *gin.Context){
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"Login and Register","id":[]string{"LoginAndRegister","serverMessage"}})
+}
+
+func returnEntrancePage(ctx *gin.Context){
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"Entrance","header": "entranceHeader","id":[]string{"entrance","serverMessage"}})
 }
 
 //messagesに含まれるものを jsonで返す
@@ -225,6 +229,6 @@ func postLogout(ctx *gin.Context) {
 	session.Clear()
 	session.Save()
 
-	ctx.Redirect(http.StatusSeeOther, "/login")
+	ctx.Redirect(http.StatusSeeOther, "/entrance")
 
 }
