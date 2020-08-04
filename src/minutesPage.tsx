@@ -91,6 +91,8 @@ MessagePostForm.defaultProps = {
 };
 
 function GetMessage(props) {
+  const { forceUpdate } = props;
+
   type User = {
     id: number;
     name: string;
@@ -111,7 +113,7 @@ function GetMessage(props) {
     fetch('/message')
       .then((res) => res.json())
       .then(setData);
-  }, [props.forceUpdate]);
+  }, [forceUpdate]);
 
   return (
     // タグが複数できる場合は何らかのタグで全体を囲う
