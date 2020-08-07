@@ -37,8 +37,8 @@ func main() {
 	router.GET("/message", fetchMessage)
 	// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
 	router.POST("/add_message", handleAddMessage)
-	// /update_messageへのPOSTリクエストは、handleEditMessage関数でハンドル
-	router.POST("/update_message", handleEditMessage)
+	// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
+	router.POST("/update_message", handleUpdateMessage)
 	// ログインページを返す
 	router.GET("/login", returnLoginPage)
 	// ログイン動作を司る
@@ -147,15 +147,15 @@ func handleAddMessage(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-// EditMessageRequest は、クライアントからのメッセージ追加要求のフォーマットです。
-type EditMessageRequest struct {
+// UpdateMessageRequest は、クライアントからのメッセージ追加要求のフォーマットです。
+type UpdateMessageRequest struct {
 	ID string `json:"id"`
 	Message string `json:"message"`
 }
 
-func handleEditMessage(ctx *gin.Context) {
+func handleUpdateMessage(ctx *gin.Context) {
 	// POST bodyからメッセージを獲得
-	req := new(EditMessageRequest)
+	req := new(UpdateMessageRequest)
 	err := ctx.BindJSON(req)
 	if err != nil {
 		// メッセージがJSONではない、もしくは、content-typeがapplication/jsonになっていない
