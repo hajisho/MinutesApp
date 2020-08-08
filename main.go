@@ -5,6 +5,7 @@ package main
 //違うのはエラーなのにエラーと出力されないことがあること
 
 import (
+	"strconv"
 	//ginのインポート
 	"github.com/gin-gonic/gin"
 
@@ -36,6 +37,8 @@ func main() {
 	router.GET("/message", fetchMessage)
 	// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
 	router.POST("/add_message", handleAddMessage)
+	// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
+	router.POST("/update_message", handleUpdateMessage)
 	// ログインページを返す
 	router.GET("/login", returnLoginPage)
 	// ログイン動作を司る
@@ -143,6 +146,37 @@ func handleAddMessage(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
+
+// UpdateMessageRequest は、クライアントからのメッセージ追加要求のフォーマットです。
+type UpdateMessageRequest struct {
+	ID string `json:"id"`
+	Message string `json:"message"`
+}
+
+func handleUpdateMessage(ctx *gin.Context) {
+	// POST bodyからメッセージを獲得
+	req := new(UpdateMessageRequest)
+	err := ctx.BindJSON(req)
+	if err != nil {
+		// メッセージがJSONではない、もしくは、content-typeがapplication/jsonになっていない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request as JSON format is expected"})
+		return
+	}
+
+	if req.Message == "" {
+		// メッセージがない、無効なリクエスト
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to parameter 'message' being empty"})
+		// 帰ることを忘れない
+		return
+	}
+
+	id, _ := strconv.Atoi(req.ID)
+	//データベースにある指定されたメッセージを更新
+	dbUpdate(id, req.Message)
+
+	ctx.JSON(http.StatusOK, gin.H{"success": true})
+}
+
 
 //ログイン試行時にクライアントから送られてくるフォーマット
 type userInfo struct {

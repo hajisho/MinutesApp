@@ -10,6 +10,7 @@ import MenuIcon from '@material-ui/icons/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import Menu from '@material-ui/core/Menu';
 import AccountCircle from '@material-ui/icons/AccountCircle';
+import EditMessagePostForm from './editForm';
 
 // メッセージ追加のAPIへのURL
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -121,6 +122,10 @@ function GetMessage(props) {
       {data.map((item) => (
         <p key={item.id}>
           {item.id}:{item.addedBy.id}:{item.message}
+          <EditMessagePostForm
+            prevMessage={item.message}
+            id={item.id.toString()}
+          />
         </p>
       ))}
     </div>
