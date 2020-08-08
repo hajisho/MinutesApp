@@ -81,7 +81,7 @@ export default function MessagePostForm(props) {
       <TextField
         id="standard-multiline-static"
         multiline
-        rows={1}
+        rows={2}
         value={message}
         type="textbox"
         placeholder="メッセージを入力"

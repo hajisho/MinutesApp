@@ -70,11 +70,7 @@ function GetMessage(props) {
           <Card className={classes.root}>
             <CardContent>
               <CardHeader
-                avatar={
-                  <Avatar src="/static/images/avatar/1.jpg">
-                    {item.addedBy.name}
-                  </Avatar>
-                }
+                avatar={<Avatar>{item.addedBy.name}</Avatar>}
                 title={item.addedBy.name}
               />
               <Typography variant="body2" component="p">
