@@ -10,11 +10,35 @@ import MenuIcon from '@material-ui/icons/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import Menu from '@material-ui/core/Menu';
 import AccountCircle from '@material-ui/icons/AccountCircle';
-import EditMessagePostForm from './editForm';
-import MessagePostForm from './messageForm';
+import Card from '@material-ui/core/Card';
+import CardHeader from '@material-ui/core/CardHeader';
+import CardActions from '@material-ui/core/CardActions';
+import CardContent from '@material-ui/core/CardContent';
+import Avatar from '@material-ui/core/Avatar';
 
+import MessagePostForm from './messageForm';
+import EditMessagePostForm from './editForm';
+
+const useStylesCard = makeStyles({
+  root: {
+    minWidth: 275,
+    maxWidth: 275,
+  },
+  bullet: {
+    display: 'inline-block',
+    margin: '0 2px',
+    transform: 'scale(0.8)',
+  },
+  title: {
+    fontSize: 14,
+  },
+  pos: {
+    marginBottom: 12,
+  },
+});
 function GetMessage(props) {
   const { forceUpdate } = props;
+  const classes = useStylesCard();
 
   type User = {
     id: number;
@@ -43,11 +67,27 @@ function GetMessage(props) {
     <div>
       {data.map((item) => (
         <p key={item.id}>
-          {item.id}:{item.addedBy.id}:{item.message}
-          <EditMessagePostForm
-            prevMessage={item.message}
-            id={item.id.toString()}
-          />
+          <Card className={classes.root}>
+            <CardContent>
+              <CardHeader
+                avatar={
+                  <Avatar src="/static/images/avatar/1.jpg">
+                    {item.addedBy.id}
+                  </Avatar>
+                }
+                title={item.addedBy.id}
+              />
+              <Typography variant="body2" component="p">
+                {item.message}
+              </Typography>
+            </CardContent>
+            <CardActions>
+              <EditMessagePostForm
+                prevMessage={item.message}
+                id={item.id.toString()}
+              />
+            </CardActions>
+          </Card>
         </p>
       ))}
     </div>
@@ -79,7 +119,7 @@ function MessageSection() {
   );
 }
 
-const useStyles = makeStyles((theme) => ({
+const useStylesBar = makeStyles((theme) => ({
   header: {
     flexGrow: 1,
   },
@@ -92,7 +132,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 function MinuteAppBar() {
-  const classes = useStyles();
+  const classes = useStylesBar();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const isMenuOpen = Boolean(anchorEl);
