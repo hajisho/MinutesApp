@@ -72,10 +72,10 @@ function GetMessage(props) {
               <CardHeader
                 avatar={
                   <Avatar src="/static/images/avatar/1.jpg">
-                    {item.addedBy.id}
+                    {item.addedBy.name}
                   </Avatar>
                 }
-                title={item.addedBy.id}
+                title={item.addedBy.name}
               />
               <Typography variant="body2" component="p">
                 {item.message}
