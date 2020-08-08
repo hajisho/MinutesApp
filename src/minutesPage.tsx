@@ -23,6 +23,8 @@ const useStylesCard = makeStyles({
   root: {
     minWidth: 275,
     maxWidth: 275,
+    marginTop: 15,
+    marginBottom: 15,
   },
   bullet: {
     display: 'inline-block',
@@ -66,25 +68,23 @@ function GetMessage(props) {
     // タグが複数できる場合は何らかのタグで全体を囲う
     <div>
       {data.map((item) => (
-        <p key={item.id}>
-          <Card className={classes.root}>
-            <CardContent>
-              <CardHeader
-                avatar={<Avatar>{item.addedBy.name}</Avatar>}
-                title={item.addedBy.name}
-              />
-              <Typography variant="body2" component="p">
-                {item.message}
-              </Typography>
-            </CardContent>
-            <CardActions>
-              <EditMessagePostForm
-                prevMessage={item.message}
-                id={item.id.toString()}
-              />
-            </CardActions>
-          </Card>
-        </p>
+        <Card className={classes.root} key={item.id}>
+          <CardContent>
+            <CardHeader
+              avatar={<Avatar>{item.addedBy.name}</Avatar>}
+              title={item.addedBy.name}
+            />
+            <Typography variant="body2" component="p">
+              {item.message}
+            </Typography>
+          </CardContent>
+          <CardActions>
+            <EditMessagePostForm
+              prevMessage={item.message}
+              id={item.id.toString()}
+            />
+          </CardActions>
+        </Card>
       ))}
     </div>
   );
