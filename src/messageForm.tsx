@@ -1,5 +1,23 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import Icon from '@material-ui/core/Icon';
+import Button from '@material-ui/core/Button';
+import { createStyles, makeStyles } from '@material-ui/core/styles';
+import TextField from '@material-ui/core/TextField';
+
+const useStyles = makeStyles((theme) =>
+  createStyles({
+    button: {
+      margin: theme.spacing(1),
+    },
+    root: {
+      '& .MuiTextField-root': {
+        margin: theme.spacing(1),
+        width: '25ch',
+      },
+    },
+  })
+);
 
 // メッセージ追加のAPIへのURL
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -10,6 +28,8 @@ export default function MessagePostForm(props) {
   const [message, setMessage] = useState<string>('');
   // サーバがへメッセージ追加のリクエストを処理中ならtrue、でないならfalseの状態
   const [working, setWorking] = useState<boolean>(false);
+
+  const classes = useStyles();
 
   const handleSubmit = async (event: React.FormEvent) => {
     // FIXME もしかしたら、非同期なため、これが効く前にボタンをクリックできるかもしれない
@@ -57,16 +77,26 @@ export default function MessagePostForm(props) {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input
+    <form>
+      <TextField
+        id="standard-multiline-static"
+        multiline
+        rows={2}
         value={message}
         type="textbox"
-        placeholder="ここに追加したいメッセージを入力します"
+        placeholder="メッセージを入力"
         onChange={(event) => setMessage(event.target.value)}
       />
-      <button type="button" disabled={working}>
-        追加
-      </button>
+      <Button
+        disabled={working}
+        variant="contained"
+        color="primary"
+        className={classes.button}
+        endIcon={<Icon>send</Icon>}
+        onClick={handleSubmit}
+      >
+        Send
+      </Button>
     </form>
   );
 }
