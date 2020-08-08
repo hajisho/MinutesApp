@@ -170,9 +170,6 @@ export default function RegisterPostForm(props) {
           </div>,
           document.getElementById('serverMessage')
         );
-        throw new Error(
-          `An response from ${API_URL_LOGIN} returned non true value as 'success' member`
-        );
       } finally {
         setWorking(false);
       }
