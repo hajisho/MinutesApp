@@ -18,7 +18,7 @@ export default function DeleteMessageDialog(props) {
 
   const [message, setMessage] = React.useState<string>(targetMessage);
 
-  // Modalを開くかどうか
+  // Dialogを開くかどうか
   const [open, setOpen] = React.useState<boolean>(false);
 
   // サーバがへメッセージ追加のリクエストを処理中ならtrue、でないならfalseの状態
