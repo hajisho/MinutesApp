@@ -146,6 +146,10 @@ function MinuteAppBar() {
     setAnchorEl(null);
   };
 
+  const handleLogout = () => {
+    window.location.href = '/logout';
+  };
+
   const menuId = 'primary-search-account-menu';
   const renderMenu = (
     <Menu
@@ -159,6 +163,7 @@ function MinuteAppBar() {
     >
       <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
       <MenuItem onClick={handleMenuClose}>My account</MenuItem>
+      <MenuItem onClick={handleLogout}>Logout</MenuItem>
     </Menu>
   );
 
