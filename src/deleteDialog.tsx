@@ -103,7 +103,7 @@ export default function DeleteMessageDialog(props) {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="inherit" size="small">
+          <Button onClick={handleClose} color="inherit" size="small" autoFocus>
             Cancel
           </Button>
           <Button
@@ -112,7 +112,6 @@ export default function DeleteMessageDialog(props) {
             size="small"
             endIcon={<DeleteIcon fontSize="small" />}
             variant="contained"
-            autoFocus
           >
             Delete
           </Button>
