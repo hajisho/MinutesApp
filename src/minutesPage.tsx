@@ -144,6 +144,10 @@ function MinuteAppBar() {
     window.location.href = '/logout';
   };
 
+  const handleLogout = () => {
+    window.location.href = '/logout';
+  };
+
   const menuId = 'primary-search-account-menu';
   const renderMenu = (
     <Menu
