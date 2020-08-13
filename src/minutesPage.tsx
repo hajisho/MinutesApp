@@ -18,6 +18,7 @@ import Avatar from '@material-ui/core/Avatar';
 
 import MessagePostForm from './messageForm';
 import EditMessagePostForm from './editForm';
+import DeleteMessageDialog from './deleteDialog';
 
 const useStylesCard = makeStyles({
   root: {
@@ -81,6 +82,10 @@ function GetMessage(props) {
           <CardActions>
             <EditMessagePostForm
               prevMessage={item.message}
+              id={item.id.toString()}
+            />
+            <DeleteMessageDialog
+              targetMessage={item.message}
               id={item.id.toString()}
             />
           </CardActions>
