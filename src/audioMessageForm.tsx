@@ -1,17 +1,41 @@
 import React, { useState } from 'react';
-import Icon from '@material-ui/core/Icon';
 import Button from '@material-ui/core/Button';
 import PropTypes from 'prop-types';
+import ReactDOM from 'react-dom';
+import Alert from '@material-ui/lab/Alert';
+import KeyboardVoiceIcon from '@material-ui/icons/KeyboardVoice';
+import { createStyles, makeStyles } from '@material-ui/core/styles';
 
 const apiUrlAddMessage = '/add_message';
 
+const useStyles = makeStyles((theme) =>
+  createStyles({
+    button: {
+      margin: theme.spacing(1),
+    },
+  })
+);
+
 export default function AudioMessagePostForm(props) {
   const [working, setWorking] = useState<boolean>(false);
+  const classes = useStyles();
 
   if ('SpeechRecognition' in window) {
     (window as any).SpeechRecognition = (window as any).SpeechRecognition;
   } else if ('webkitSpeechRecognition' in window) {
     (window as any).SpeechRecognition = (window as any).webkitSpeechRecognition;
+  } else {
+    return (
+      <Alert
+        variant="outlined"
+        severity="error"
+        onClose={() => {
+          ReactDOM.render(<div />, document.getElementById('serverMessage'));
+        }}
+      >
+        このブラウザは音声認識に対応していません
+      </Alert>
+    );
   }
 
   const speech = new (window as any).SpeechRecognition();
@@ -71,7 +95,8 @@ export default function AudioMessagePostForm(props) {
         disabled={working}
         variant="contained"
         color="primary"
-        endIcon={<Icon>send</Icon>}
+        startIcon={<KeyboardVoiceIcon />}
+        className={classes.button}
         onClick={handleSubmit}
       >
         Start
@@ -79,7 +104,8 @@ export default function AudioMessagePostForm(props) {
       <Button
         disabled={working}
         variant="contained"
-        color="primary"
+        color="secondary"
+        className={classes.button}
         onClick={() => {
           window.location.href = '/';
         }}
