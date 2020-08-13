@@ -38,7 +38,13 @@ func setupRouter() *gin.Engine {
 	// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
 	r.POST("/update_message", handleUpdateMessage)
 	// /update_messageへのPOSTリクエストは、handleDeleteMessage関数でハンドル
+<<<<<<< HEAD
 	r.POST("/delete_message", handleDeleteMessage)
+=======
+	r.POST("/delete_message", handleDeleteMessage)
+	// ユーザー情報を返す
+	r.GET("/user", fetchUserInfo)
+>>>>>>> 編集・削除ボタンを非表示にする
 	// ログインページを返す
 	r.GET("/login", returnLoginPage)
 	// ログイン動作を司る
@@ -211,6 +217,17 @@ func handleDeleteMessage(ctx *gin.Context) {
 	dbDelete(id)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// ユーザー自身の情報を返す
+func fetchUserInfo(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	user := getUser(session.Get("UserId").(string))
+	userInfo := ResponseUserPublic {
+		ID: user.ID,
+		Name: user.Username,
+	}
+	ctx.JSON(http.StatusOK, userInfo)
 }
 
 //ログイン試行時にクライアントから送られてくるフォーマット
