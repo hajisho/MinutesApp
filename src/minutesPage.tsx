@@ -16,7 +16,7 @@ import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import Avatar from '@material-ui/core/Avatar';
 
-import MessagePostForm from './messageForm';
+import AudioMessagePostForm from './audioMessageForm';
 import EditMessagePostForm from './editForm';
 import DeleteMessageDialog from './deleteDialog';
 
@@ -114,7 +114,7 @@ function MessageSection() {
 
   return (
     <>
-      <MessagePostForm onSubmitSuccessful={onMessageAdded} />
+      <AudioMessagePostForm onSubmitSuccessful={onMessageAdded} />
       <GetMessage forceUpdate={randomValue} />
     </>
   );
