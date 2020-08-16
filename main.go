@@ -15,45 +15,50 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 )
 
-func main() {
+func setupRouter() *gin.Engine {
 
-	//Temp="test"
-
-	router := gin.Default()
-	// 静的ファイルのディレクトリを指定
-	router.Static("dist", "./dist")
-	// HTML ファイルのディレクトリを指定
-	router.LoadHTMLGlob("./dist/public/*.html")
+	r := gin.Default()
 
 	dbInit() //データベースマイグレート
 
 	// セッションの設定
 	store := cookie.NewStore([]byte("secret"))
-	router.Use(sessions.Sessions("mysession", store))
+	// 静的ファイルのディレクトリを指定
+	r.Static("dist", "./dist")
+	// HTML ファイルのディレクトリを指定
+	r.LoadHTMLGlob("./dist/public/*.html")
 
+	r.Use(sessions.Sessions("mysession", store))
 	// / に　GETリクエストが飛んできたらhandler関数を実行
-	router.GET("/", returnMainPage)
+	r.GET("/", returnMainPage)
 	// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
-	router.GET("/message", fetchMessage)
+	r.GET("/message", fetchMessage)
 	// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
-	router.POST("/add_message", handleAddMessage)
+	r.POST("/add_message", handleAddMessage)
 	// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
-	router.POST("/update_message", handleUpdateMessage)
+	r.POST("/update_message", handleUpdateMessage)
 	// /update_messageへのPOSTリクエストは、handleDeleteMessage関数でハンドル
-	router.POST("/delete_message", handleDeleteMessage)
+	r.POST("/delete_message", handleDeleteMessage)
 	// ログインページを返す
-	router.GET("/login", returnLoginPage)
+	r.GET("/login", returnLoginPage)
 	// ログイン動作を司る
-	router.POST("/login", postLogin)
+	r.POST("/login", postLogin)
 	//ユーザー登録ページを返す
-	router.GET("/register", returnRegisterPage)
+	r.GET("/register", returnRegisterPage)
 	//　ユーザー登録動作を司る
-	router.POST("/register", tempChallengeRegister)
+	r.POST("/register", tempChallengeRegister)
 	//セッション情報の削除
-	router.GET("/logout", postLogout)
+	r.GET("/logout", postLogout)
 
-	router.GET("/entrance", returnEntrancePage)
+	r.GET("/entrance", returnEntrancePage)
 
+	return r
+}
+
+func main() {
+
+	//Temp="test"
+	router := setupRouter()
 	// サーバーを起動しています
 	router.Run(":10000")
 }
