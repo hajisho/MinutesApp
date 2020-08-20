@@ -38,13 +38,9 @@ func setupRouter() *gin.Engine {
 	// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
 	r.POST("/update_message", handleUpdateMessage)
 	// /update_messageへのPOSTリクエストは、handleDeleteMessage関数でハンドル
-<<<<<<< HEAD
-	r.POST("/delete_message", handleDeleteMessage)
-=======
 	r.POST("/delete_message", handleDeleteMessage)
 	// ユーザー情報を返す
 	r.GET("/user", fetchUserInfo)
->>>>>>> 編集・削除ボタンを非表示にする
 	// ログインページを返す
 	r.GET("/login", returnLoginPage)
 	// ログイン動作を司る
@@ -184,6 +180,18 @@ func handleUpdateMessage(ctx *gin.Context) {
 	}
 
 	id, _ := strconv.Atoi(req.ID)
+
+	session := sessions.Default(ctx)
+	user := getUser(session.Get("UserId").(string))
+	msg := dbGetOne(id)
+
+	if user.ID != msg.UserID {
+		// 権限がない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to privileges"})
+		// 帰ることを忘れない
+		return
+	}
+
 	//データベースにある指定されたメッセージを更新
 	dbUpdate(id, req.Message)
 
@@ -213,6 +221,18 @@ func handleDeleteMessage(ctx *gin.Context) {
 	}
 
 	id, _ := strconv.Atoi(req.ID)
+
+	session := sessions.Default(ctx)
+	user := getUser(session.Get("UserId").(string))
+	msg := dbGetOne(id)
+
+	if user.ID != msg.UserID {
+		// 権限がない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to privileges"})
+		// 帰ることを忘れない
+		return
+	}
+
 	//データベースにある指定されたメッセージを更新
 	dbDelete(id)
 
