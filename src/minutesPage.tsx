@@ -39,6 +39,7 @@ const useStylesCard = makeStyles({
     marginBottom: 12,
   },
 });
+
 function GetMessage(props) {
   const { forceUpdate } = props;
   const classes = useStylesCard();
@@ -65,6 +66,15 @@ function GetMessage(props) {
       .then(setData);
   }, [forceUpdate]);
 
+  // ユーザー情報を取得
+  const [userData, setUserData] = useState<User>({ id: 0, name: '' });
+
+  useEffect(() => {
+    fetch('/user')
+      .then((res) => res.json())
+      .then(setUserData);
+  }, []);
+
   return (
     // タグが複数できる場合は何らかのタグで全体を囲う
     <div>
@@ -83,10 +93,12 @@ function GetMessage(props) {
             <EditMessagePostForm
               prevMessage={item.message}
               id={item.id.toString()}
+              isHidden={userData.id !== item.addedBy.id}
             />
             <DeleteMessageDialog
               targetMessage={item.message}
               id={item.id.toString()}
+              isHidden={userData.id !== item.addedBy.id}
             />
           </CardActions>
         </Card>

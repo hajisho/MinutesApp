@@ -39,6 +39,8 @@ func setupRouter() *gin.Engine {
 	r.POST("/update_message", handleUpdateMessage)
 	// /update_messageへのPOSTリクエストは、handleDeleteMessage関数でハンドル
 	r.POST("/delete_message", handleDeleteMessage)
+	// ユーザー情報を返す
+	r.GET("/user", fetchUserInfo)
 	// ログインページを返す
 	r.GET("/login", returnLoginPage)
 	// ログイン動作を司る
@@ -178,6 +180,18 @@ func handleUpdateMessage(ctx *gin.Context) {
 	}
 
 	id, _ := strconv.Atoi(req.ID)
+
+	session := sessions.Default(ctx)
+	user := getUser(session.Get("UserId").(string))
+	msg := dbGetOne(id)
+
+	if user.ID != msg.UserID {
+		// 権限がない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to privileges"})
+		// 帰ることを忘れない
+		return
+	}
+
 	//データベースにある指定されたメッセージを更新
 	dbUpdate(id, req.Message)
 
@@ -207,10 +221,33 @@ func handleDeleteMessage(ctx *gin.Context) {
 	}
 
 	id, _ := strconv.Atoi(req.ID)
+
+	session := sessions.Default(ctx)
+	user := getUser(session.Get("UserId").(string))
+	msg := dbGetOne(id)
+
+	if user.ID != msg.UserID {
+		// 権限がない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to privileges"})
+		// 帰ることを忘れない
+		return
+	}
+
 	//データベースにある指定されたメッセージを更新
 	dbDelete(id)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// ユーザー自身の情報を返す
+func fetchUserInfo(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	user := getUser(session.Get("UserId").(string))
+	userInfo := ResponseUserPublic {
+		ID: user.ID,
+		Name: user.Username,
+	}
+	ctx.JSON(http.StatusOK, userInfo)
 }
 
 //ログイン試行時にクライアントから送られてくるフォーマット
