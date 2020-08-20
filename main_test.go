@@ -7,8 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var router = setupRouter()
+
 func TestEntranceRoute(t *testing.T) {
-	router := setupRouter()
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/entrance", nil)
