@@ -67,7 +67,7 @@ function GetMessage(props) {
   }, [forceUpdate]);
 
   // ユーザー情報を取得
-  const [userData, setUserData] = useState<User>();
+  const [userData, setUserData] = useState<User>({ id: 0, name: '' });
 
   useEffect(() => {
     fetch('/user')
