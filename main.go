@@ -48,7 +48,7 @@ func setupRouter() *gin.Engine {
 	//ユーザー登録ページを返す
 	r.GET("/register", returnRegisterPage)
 	//　ユーザー登録動作を司る
-	r.POST("/register", tempChallengeRegister)
+	r.POST("/register", postRegister)
 	//セッション情報の削除
 	r.GET("/logout", postLogout)
 
@@ -107,6 +107,14 @@ func returnEntrancePage(ctx *gin.Context){
 
 //messagesに含まれるものを jsonで返す
 func fetchMessage(ctx *gin.Context) {
+
+	session := sessions.Default(ctx)
+
+	if session.Get("UserId") == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
 	messagesInDB := dbGetAll()
 	// データベースに保存されているメッセージの形式から、クライアントへ返す形式に変換する
 	messages := make([]ResponseMessage, len(messagesInDB))
@@ -148,12 +156,20 @@ func handleAddMessage(ctx *gin.Context) {
 	}
 
 	session := sessions.Default(ctx)
+
+	if session.Get("UserId") == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
 	user := getUser(session.Get("UserId").(string))
 
 	//メッセージをデータベースへ追加
 	dbInsert(req.Message, user.ID)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
+
+	return
 }
 
 // UpdateMessageRequest は、クライアントからのメッセージ追加要求のフォーマットです。
@@ -182,6 +198,12 @@ func handleUpdateMessage(ctx *gin.Context) {
 	id, _ := strconv.Atoi(req.ID)
 
 	session := sessions.Default(ctx)
+
+	if session.Get("UserId") == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
 	user := getUser(session.Get("UserId").(string))
 	msg := dbGetOne(id)
 
@@ -223,6 +245,12 @@ func handleDeleteMessage(ctx *gin.Context) {
 	id, _ := strconv.Atoi(req.ID)
 
 	session := sessions.Default(ctx)
+
+	if session.Get("UserId") == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
 	user := getUser(session.Get("UserId").(string))
 	msg := dbGetOne(id)
 
@@ -242,6 +270,12 @@ func handleDeleteMessage(ctx *gin.Context) {
 // ユーザー自身の情報を返す
 func fetchUserInfo(ctx *gin.Context) {
 	session := sessions.Default(ctx)
+
+	if session.Get("UserId") == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
 	user := getUser(session.Get("UserId").(string))
 	userInfo := ResponseUserPublic {
 		ID: user.ID,
@@ -256,8 +290,8 @@ type userInfo struct {
 	Password string `json:"password"`
 }
 
-//登録動作テストのための臨時関数
-func tempChallengeRegister(ctx *gin.Context) {
+//登録動作
+func postRegister(ctx *gin.Context) {
 	// POST bodyからメッセージを獲得
 	req := new(userInfo)
 	err := ctx.BindJSON(req)
@@ -283,6 +317,7 @@ func tempChallengeRegister(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
+	return
 }
 
 //ログイン処理
