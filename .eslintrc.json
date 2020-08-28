@@ -5,12 +5,13 @@
     },
     "extends": [
         "plugin:react/recommended",
-        "airbnb",
+        "airbnb-typescript",
         "prettier",
         "prettier/react"
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
+        "project": "./tsconfig.json",
         "ecmaFeatures": {
             "jsx": true
         },
@@ -55,5 +56,4 @@
     "settings": {
       "import/resolver": "webpack"
     }
-
 }
