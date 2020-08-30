@@ -188,3 +188,14 @@ func getUserByID(id uint) User {
 func comparePassword(dbPassword string, formPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(formPassword))
 }
+
+func getAllMeeting() []Meeting {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(getAllMeeting)")
+	}
+	defer db.Close()
+	meeting := make([]Meeting, 0)
+	db.Order("updated_at DESC").Find(&meeting)
+	return meeting
+}

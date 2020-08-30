@@ -33,6 +33,8 @@ func setupRouter() *gin.Engine {
 	r.GET("/", returnMainPage)
 	// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
 	r.GET("/message", fetchMessage)
+	// ミーティング一覧を返す
+	r.GET("/api_meetings", handleMeetings)
 	// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
 	r.POST("/add_message", handleAddMessage)
 	// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
@@ -49,6 +51,8 @@ func setupRouter() *gin.Engine {
 	r.POST("/register", tempChallengeRegister)
 	//セッション情報の削除
 	r.GET("/logout", postLogout)
+	// ミーティング一覧のページ
+	r.GET("/meetings", returnMeetingsPage)
 
 	r.GET("/entrance", returnEntrancePage)
 
@@ -73,8 +77,9 @@ func returnMainPage(ctx *gin.Context) {
 		ctx.Abort()
 		return
 	}
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "議事録","header": "minuteHeader", "id": []string{"message"}})
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "議事録", "header": "minuteHeader", "id": []string{"message"}})
 }
+
 // ResponseUserPublic は、公開ユーザー情報がクライアントへ返される時の形式です。
 // JSON形式へマーシャルできます。
 type ResponseUserPublic struct {
@@ -89,18 +94,28 @@ type ResponseMessage struct {
 	AddedBy ResponseUserPublic `json:"addedBy"`
 	Message string             `json:"message"`
 }
+
+// ResponseMeeting は、ミーティングがクライアントへ返される時の形式です。
+type ResponseMeeting struct {
+	Name string `json:"name"`
+}
+
 //ログインページのhtmlを返す
-func returnLoginPage(ctx *gin.Context){
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"Login and Register","header": "loginHeader","id":[]string{"LoginAndRegister","serverMessage"}})
+func returnLoginPage(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Login and Register", "header": "loginHeader", "id": []string{"LoginAndRegister", "serverMessage"}})
 }
 
 //ユーザー登録ページのhtmlを返す
-func returnRegisterPage(ctx *gin.Context){
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"Login and Register","id":[]string{"LoginAndRegister","serverMessage"}})
+func returnRegisterPage(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Login and Register", "id": []string{"LoginAndRegister", "serverMessage"}})
 }
 
-func returnEntrancePage(ctx *gin.Context){
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title":"Entrance","header": "entranceHeader","id":[]string{"entrance","serverMessage"}})
+func returnEntrancePage(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Entrance", "header": "entranceHeader", "id": []string{"entrance", "serverMessage"}})
+}
+
+func returnMeetingsPage(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Meetings", "header": "minuteHeader", "id": []string{"meetings"}})
 }
 
 //messagesに含まれるものを jsonで返す
@@ -156,7 +171,7 @@ func handleAddMessage(ctx *gin.Context) {
 
 // UpdateMessageRequest は、クライアントからのメッセージ追加要求のフォーマットです。
 type UpdateMessageRequest struct {
-	ID string `json:"id"`
+	ID      string `json:"id"`
 	Message string `json:"message"`
 }
 
@@ -300,4 +315,15 @@ func postLogout(ctx *gin.Context) {
 
 	ctx.Redirect(http.StatusSeeOther, "/entrance")
 
+}
+
+func handleMeetings(ctx *gin.Context) {
+	ms := getAllMeeting()
+	ret := make([]ResponseMeeting, len(ms))
+	for i, meeting := range ms {
+		ret[i] = ResponseMeeting{
+			Name: meeting.Name,
+		}
+	}
+	ctx.JSON(http.StatusOK, ret)
 }
