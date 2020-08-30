@@ -1,28 +1,30 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import EditIcon from '@material-ui/icons/Edit';
+import DeleteIcon from '@material-ui/icons/Delete';
 import IconButton from '@material-ui/core/IconButton';
 import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 
-// メッセージ更新のAPIへのURL
+// メッセージ削除のAPIへのURL
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const API_URL_UPDATE_MESSAGE = '/update_message';
+const API_URL_DELETE_MESSAGE = '/delete_message';
 
-export default function EditMessagePostForm(props) {
-  const { onSubmitSuccessful, prevMessage, id, isHidden } = props;
+export default function DeleteMessageDialog(props) {
+  const { onSubmitSuccessful, targetMessage, id, isHidden } = props;
 
-  const [message, setMessage] = React.useState<string>(prevMessage);
+  const [message, setMessage] = React.useState<string>(targetMessage);
 
+  // Dialogを開くかどうか
   const [open, setOpen] = React.useState<boolean>(false);
+
   // サーバがへメッセージ追加のリクエストを処理中ならtrue、でないならfalseの状態
   const [working, setWorking] = useState<boolean>(false);
 
-  const handleUpdate = async (event: React.FormEvent) => {
+  const handleDelete = async (event: React.FormEvent) => {
     // FIXME もしかしたら、非同期なため、これが効く前にボタンをクリックできるかもしれない
     setWorking(true);
     try {
@@ -30,7 +32,7 @@ export default function EditMessagePostForm(props) {
       event.preventDefault();
 
       // Reactのハンドラはasyncにできる
-      const res = await fetch(API_URL_UPDATE_MESSAGE, {
+      const res = await fetch(API_URL_DELETE_MESSAGE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,24 +40,24 @@ export default function EditMessagePostForm(props) {
         // 相応しくないかも
         // same-originを使うべき？
         credentials: 'include',
-        body: JSON.stringify({ id, message }),
+        body: JSON.stringify({ id }),
       });
       const obj = await res.json();
       if ('error' in obj) {
         // サーバーからエラーが返却された
         throw new Error(
-          `An error occurred on querying ${API_URL_UPDATE_MESSAGE}, the response included error message: ${obj.error}`
+          `An error occurred on querying ${API_URL_DELETE_MESSAGE}, the response included error message: ${obj.error}`
         );
       }
       if (!('success' in obj)) {
         // サーバーからsuccessメンバが含まれたJSONが帰るはずだが、見当たらなかった
         throw new Error(
-          `An response from ${API_URL_UPDATE_MESSAGE} unexpectedly did not have 'success' member`
+          `An response from ${API_URL_DELETE_MESSAGE} unexpectedly did not have 'success' member`
         );
       }
       if (obj.success !== true) {
         throw new Error(
-          `An response from ${API_URL_UPDATE_MESSAGE} returned non true value as 'success' member`
+          `An response from ${API_URL_DELETE_MESSAGE} returned non true value as 'success' member`
         );
       }
       // 要求は成功
@@ -82,39 +84,39 @@ export default function EditMessagePostForm(props) {
   return (
     <span>
       <IconButton
-        edge="end"
-        aria-label="edit"
+        aria-label="delete"
         onClick={handleClickOpen}
         data-num="100"
         disabled={working}
       >
-        <EditIcon fontSize="small" />
+        <DeleteIcon fontSize="small" />
       </IconButton>
       <Dialog
         open={open}
         onClose={handleClose}
-        aria-labelledby="form-dialog-title"
-        fullWidth
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="form-dialog-title">編集</DialogTitle>
+        <DialogTitle id="alert-dialog-title">
+          この文章を削除しますか？
+        </DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="name"
-            type="text"
-            fullWidth
-            multiline
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-          />
+          <DialogContentText id="alert-dialog-description">
+            {message}
+          </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="primary">
-            キャンセル
+          <Button onClick={handleClose} color="inherit" size="small" autoFocus>
+            Cancel
           </Button>
-          <Button onClick={handleUpdate} color="primary">
-            完了
+          <Button
+            onClick={handleDelete}
+            color="secondary"
+            size="small"
+            endIcon={<DeleteIcon fontSize="small" />}
+            variant="contained"
+          >
+            Delete
           </Button>
         </DialogActions>
       </Dialog>
@@ -122,19 +124,19 @@ export default function EditMessagePostForm(props) {
   );
 }
 
-EditMessagePostForm.propTypes = {
+DeleteMessageDialog.propTypes = {
   // メッセージの更新が正常に完了したら呼ばれる関数
   onSubmitSuccessful: PropTypes.func,
-  prevMessage: PropTypes.string,
+  targetMessage: PropTypes.string,
   id: PropTypes.string,
   isHidden: PropTypes.bool,
 };
 
-EditMessagePostForm.defaultProps = {
+DeleteMessageDialog.defaultProps = {
   onSubmitSuccessful: () => {
     window.location.href = '/';
   },
-  prevMessage: '',
+  targetMessage: '',
   id: '',
   isHidden: true,
 };

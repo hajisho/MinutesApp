@@ -3,3 +3,4 @@ node_modules/
 dist/
 *.sqlite3
 temp/
+main
