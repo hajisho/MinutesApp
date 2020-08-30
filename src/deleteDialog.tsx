@@ -14,7 +14,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 const API_URL_DELETE_MESSAGE = '/delete_message';
 
 export default function DeleteMessageDialog(props) {
-  const { onSubmitSuccessful, targetMessage, id } = props;
+  const { onSubmitSuccessful, targetMessage, id, isHidden } = props;
 
   const [message, setMessage] = React.useState<string>(targetMessage);
 
@@ -78,6 +78,9 @@ export default function DeleteMessageDialog(props) {
     setOpen(false);
   };
 
+  if (isHidden) {
+    return null;
+  }
   return (
     <span>
       <IconButton
@@ -126,6 +129,7 @@ DeleteMessageDialog.propTypes = {
   onSubmitSuccessful: PropTypes.func,
   targetMessage: PropTypes.string,
   id: PropTypes.string,
+  isHidden: PropTypes.bool,
 };
 
 DeleteMessageDialog.defaultProps = {
@@ -134,4 +138,5 @@ DeleteMessageDialog.defaultProps = {
   },
   targetMessage: '',
   id: '',
+  isHidden: true,
 };

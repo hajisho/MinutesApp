@@ -69,7 +69,7 @@ func dbInit() {
 	if err != nil {
 		panic("データベース開ません(dbinit)")
 	}
-	db.AutoMigrate(&User{}, &Message{}, Meeting{}, &Entry{}) //ファイルがなければ、生成を行う。すでにあればマイグレート。すでにあってマイグレートされていれば何も行わない
+	db.AutoMigrate(&User{}, &Message{}, Meeting{}, &Entry{}, &TempSession{}) //ファイルがなければ、生成を行う。すでにあればマイグレート。すでにあってマイグレートされていれば何も行わない
 	defer db.Close()
 }
 

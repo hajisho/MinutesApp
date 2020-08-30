@@ -14,7 +14,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 const API_URL_UPDATE_MESSAGE = '/update_message';
 
 export default function EditMessagePostForm(props) {
-  const { onSubmitSuccessful, prevMessage, id } = props;
+  const { onSubmitSuccessful, prevMessage, id, isHidden } = props;
 
   const [message, setMessage] = React.useState<string>(prevMessage);
 
@@ -76,6 +76,9 @@ export default function EditMessagePostForm(props) {
     setOpen(false);
   };
 
+  if (isHidden) {
+    return null;
+  }
   return (
     <span>
       <IconButton
@@ -91,8 +94,9 @@ export default function EditMessagePostForm(props) {
         open={open}
         onClose={handleClose}
         aria-labelledby="form-dialog-title"
+        fullWidth
       >
-        <DialogTitle id="form-dialog-title">Subscribe</DialogTitle>
+        <DialogTitle id="form-dialog-title">編集</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -100,16 +104,17 @@ export default function EditMessagePostForm(props) {
             id="name"
             type="text"
             fullWidth
+            multiline
             value={message}
             onChange={(event) => setMessage(event.target.value)}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} color="primary">
-            Cancel
+            キャンセル
           </Button>
           <Button onClick={handleUpdate} color="primary">
-            Edit
+            完了
           </Button>
         </DialogActions>
       </Dialog>
@@ -122,6 +127,7 @@ EditMessagePostForm.propTypes = {
   onSubmitSuccessful: PropTypes.func,
   prevMessage: PropTypes.string,
   id: PropTypes.string,
+  isHidden: PropTypes.bool,
 };
 
 EditMessagePostForm.defaultProps = {
@@ -130,4 +136,5 @@ EditMessagePostForm.defaultProps = {
   },
   prevMessage: '',
   id: '',
+  isHidden: true,
 };

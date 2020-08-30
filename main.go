@@ -6,6 +6,7 @@ package main
 
 import (
 	"strconv"
+
 	//ginのインポート
 	"github.com/gin-gonic/gin"
 
@@ -41,6 +42,8 @@ func setupRouter() *gin.Engine {
 	r.POST("/update_message", handleUpdateMessage)
 	// /update_messageへのPOSTリクエストは、handleDeleteMessage関数でハンドル
 	r.POST("/delete_message", handleDeleteMessage)
+	// ユーザー情報を返す
+	r.GET("/user", fetchUserInfo)
 	// ログインページを返す
 	r.GET("/login", returnLoginPage)
 	// ログイン動作を司る
@@ -48,7 +51,7 @@ func setupRouter() *gin.Engine {
 	//ユーザー登録ページを返す
 	r.GET("/register", returnRegisterPage)
 	//　ユーザー登録動作を司る
-	r.POST("/register", tempChallengeRegister)
+	r.POST("/register", postRegister)
 	//セッション情報の削除
 	r.GET("/logout", postLogout)
 	// ミーティング一覧のページ
@@ -71,7 +74,7 @@ func returnMainPage(ctx *gin.Context) {
 	//Cookieがなければログインページにリダイレクト　のつもり
 	// 下記の関数、sessionCeckで確認しているから、実際には必要ないはず。要らなければ削除
 	session := sessions.Default(ctx)
-	user := session.Get("UserId")
+	user := session.Get("SessionID")
 	if user == nil {
 		ctx.Redirect(http.StatusSeeOther, "/entrance")
 		ctx.Abort()
@@ -120,6 +123,14 @@ func returnMeetingsPage(ctx *gin.Context) {
 
 //messagesに含まれるものを jsonで返す
 func fetchMessage(ctx *gin.Context) {
+
+	session := sessions.Default(ctx)
+
+	if session.Get("SessionID") == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
 	messagesInDB := dbGetAll()
 	// データベースに保存されているメッセージの形式から、クライアントへ返す形式に変換する
 	messages := make([]ResponseMessage, len(messagesInDB))
@@ -161,12 +172,26 @@ func handleAddMessage(ctx *gin.Context) {
 	}
 
 	session := sessions.Default(ctx)
-	user := getUser(session.Get("UserId").(string))
+	sessionID := session.Get("SessionID")
+
+	if sessionID == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
+	if !(SessionExist(sessionID.(string))) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
+	user := getSessionUserID(ctx)
 
 	//メッセージをデータベースへ追加
 	dbInsert(req.Message, user.ID)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
+
+	return
 }
 
 // UpdateMessageRequest は、クライアントからのメッセージ追加要求のフォーマットです。
@@ -193,6 +218,24 @@ func handleUpdateMessage(ctx *gin.Context) {
 	}
 
 	id, _ := strconv.Atoi(req.ID)
+
+	session := sessions.Default(ctx)
+
+	if session.Get("SessionID") == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
+	user := getSessionUserID(ctx)
+	msg := dbGetOne(id)
+
+	if user.ID != msg.UserID {
+		// 権限がない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to privileges"})
+		// 帰ることを忘れない
+		return
+	}
+
 	//データベースにある指定されたメッセージを更新
 	dbUpdate(id, req.Message)
 
@@ -222,10 +265,45 @@ func handleDeleteMessage(ctx *gin.Context) {
 	}
 
 	id, _ := strconv.Atoi(req.ID)
+
+	session := sessions.Default(ctx)
+
+	if session.Get("SessionID") == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
+	user := getSessionUserID(ctx)
+	msg := dbGetOne(id)
+
+	if user.ID != msg.UserID {
+		// 権限がない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to privileges"})
+		// 帰ることを忘れない
+		return
+	}
+
 	//データベースにある指定されたメッセージを更新
 	dbDelete(id)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// ユーザー自身の情報を返す
+func fetchUserInfo(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+
+	if session.Get("SessionID") == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
+	user := getSessionUserID(ctx)
+	userInfo := ResponseUserPublic{
+		ID:   user.ID,
+		Name: user.Username,
+	}
+	ctx.JSON(http.StatusOK, userInfo)
 }
 
 //ログイン試行時にクライアントから送られてくるフォーマット
@@ -234,8 +312,8 @@ type userInfo struct {
 	Password string `json:"password"`
 }
 
-//登録動作テストのための臨時関数
-func tempChallengeRegister(ctx *gin.Context) {
+//登録動作
+func postRegister(ctx *gin.Context) {
 	// POST bodyからメッセージを獲得
 	req := new(userInfo)
 	err := ctx.BindJSON(req)
@@ -261,6 +339,7 @@ func tempChallengeRegister(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
+	return
 }
 
 //ログイン処理
@@ -297,9 +376,17 @@ func postLogin(ctx *gin.Context) {
 		return
 	}
 
+	//セッション管理
+	sessionID := createSession(user.Username)
+	if sessionID == "0" {
+		ctx.Redirect(http.StatusSeeOther, "/login")
+		ctx.Abort()
+		return
+	}
+
 	//セッションにデータを格納する
 	session := sessions.Default(ctx)
-	session.Set("UserId", user.Username)
+	session.Set("SessionID", sessionID)
 	session.Save()
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
@@ -310,6 +397,10 @@ func postLogout(ctx *gin.Context) {
 
 	//セッションからデータを破棄する
 	session := sessions.Default(ctx)
+
+	sessionID := session.Get("SessionID").(string)
+	sessionDelete(sessionID)
+
 	session.Clear()
 	session.Save()
 

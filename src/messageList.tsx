@@ -10,7 +10,7 @@ import {
   CardActions,
 } from '@material-ui/core';
 // eslint-disable-next-line no-unused-vars
-import { Message } from './datatypes';
+import { Message, User } from './datatypes';
 import EditMessagePostForm from './editForm';
 import DeleteMessageDialog from './deleteDialog';
 import AudioMessagePostForm from './audioMessageForm';
@@ -34,9 +34,12 @@ const useStylesCard = makeStyles({
     marginBottom: 12,
   },
 });
+
 function GetMessage({ forceUpdate }) {
   const classes = useStylesCard();
   const [data, setData] = useState<Message[]>([]);
+  // ユーザー情報を取得
+  const [userData, setUserData] = useState<User>({ id: 0, name: '' });
 
   useEffect(() => {
     // ルート /message に対して GETリクエストを送る
@@ -45,6 +48,12 @@ function GetMessage({ forceUpdate }) {
       .then((res) => res.json())
       .then(setData);
   }, [forceUpdate]);
+
+  useEffect(() => {
+    fetch('/user')
+      .then((res) => res.json())
+      .then(setUserData);
+  }, []);
 
   return (
     // タグが複数できる場合は何らかのタグで全体を囲う
@@ -64,10 +73,12 @@ function GetMessage({ forceUpdate }) {
             <EditMessagePostForm
               prevMessage={item.message}
               id={item.id.toString()}
+              isHidden={userData.id !== item.addedBy.id}
             />
             <DeleteMessageDialog
               targetMessage={item.message}
               id={item.id.toString()}
+              isHidden={userData.id !== item.addedBy.id}
             />
           </CardActions>
         </Card>
