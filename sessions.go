@@ -19,6 +19,7 @@ type TempSession struct {
 	gorm.Model
 	SessionID string `gorm:"unique;not null"`
 	UserID    string `gorm:"not null"`
+	ValidTime time.Time
 }
 
 // 指定したsessionIDのセッションがあるか確認する
@@ -75,9 +76,10 @@ func createSession(userID string) string {
 	defer db.Close()
 
 	sessionID := LongSecureRandomBase64()
+	now := time.Now()
 
 	// Insert処理
-	if err := db.Create(&TempSession{SessionID: sessionID, UserID: userID}).Error; err != nil {
+	if err := db.Create(&TempSession{SessionID: sessionID, UserID: userID, ValidTime: now.Add(5 * time.Hour)}).Error; err != nil {
 
 		return ""
 	}
@@ -118,10 +120,11 @@ func sessionStoreUpdate() gin.HandlerFunc {
 		if err != nil {
 			panic("データベース開ません(getUserById)")
 		}
+
 		var session TempSession
 		now := time.Now()
-		date := now.Add(-5 * time.Hour)
-		db.Where("created_at <= ?", date).Delete(&session)
+		db.Where("valid_time <= ?", now).Delete(&session)
+		db.Close()
 		c.Next()
 	}
 
@@ -173,4 +176,20 @@ func sessionGetAll() []TempSession {
 	db.Order("created_at desc").Find(&sessions)
 	db.Close()
 	return sessions
+}
+
+//指定したuserIDのレコードのvalid_timeを今にする(今が有効期限になる)
+//時間がたったセッション情報が破棄されるかテストするとき用
+func sessionTimeEdit(userID string) {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(dbGetAll)")
+	}
+	var session TempSession
+	db.Where(&TempSession{UserID: userID}).Find(&session)
+
+	now := time.Now()
+	session.ValidTime = now
+	db.Save(&session)
+	db.Close()
 }

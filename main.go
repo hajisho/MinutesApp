@@ -30,6 +30,14 @@ func setupRouter() *gin.Engine {
 	r.LoadHTMLGlob("./dist/public/*.html")
 
 	r.Use(sessions.Sessions("mysession", store))
+	store.Options(sessions.Options{
+		MaxAge:   60 * 60 * 60 * 5, //cookieの寿命は、5時間で設定してある。後で長さは調節
+		Secure:   false,
+		HttpOnly: true,
+	})
+
+	// セッション管理のテーブルを更新
+	r.Use(sessionStoreUpdate())
 	// / に　GETリクエストが飛んできたらhandler関数を実行
 	r.GET("/", returnMainPage)
 	// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
@@ -80,6 +88,14 @@ func returnMainPage(ctx *gin.Context) {
 		ctx.Abort()
 		return
 	}
+
+	if !(SessionExist(user.(string))) {
+		// 不当なセッション情報によるアクセス
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid session ID"})
+		ctx.Abort()
+		return
+	}
+
 	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "議事録", "header": "minuteHeader", "id": []string{"message"}})
 }
 
@@ -378,7 +394,7 @@ func postLogin(ctx *gin.Context) {
 
 	//セッション管理
 	sessionID := createSession(user.Username)
-	if sessionID == "0" {
+	if sessionID == "" {
 		ctx.Redirect(http.StatusSeeOther, "/login")
 		ctx.Abort()
 		return
