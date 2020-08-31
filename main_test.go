@@ -2,6 +2,7 @@ package main
 
 import (
 	//"fmt"
+	"strings"
 	//"reflect"
 	"bytes"
 	"io/ioutil"
@@ -14,6 +15,9 @@ import (
 
 //正規のsession情報を格納する
 var mainCookie string = " "
+
+//ログインごとにsession情報が入れ替わることをテスト
+var oldCookie string = " "
 
 //別アカウントのテスト用
 var subCookie string = " "
@@ -292,6 +296,7 @@ func Test_canLogin_registered_user(t *testing.T) {
 	assert.Equal(t, 200, resp.Code)
 	assert.Contains(t, string(body), "success")
 	mainCookie = resp.Header().Get("Set-Cookie")
+	oldCookie = resp.Header().Get("Set-Cookie")
 }
 
 //未登録のユーザーではログインできない
@@ -364,7 +369,7 @@ func Test_canAccess_minutesPage_logined(t *testing.T) {
 	assert.Contains(t, string(body), "<title>議事録</title>")
 }
 
-//ログアウト後にログインはできない
+//ログアウト後に議事録ページにいけない
 func Test_logout(t *testing.T) {
 
 	resp := httptest.NewRecorder()
@@ -376,10 +381,12 @@ func Test_logout(t *testing.T) {
 
 	assert.Equal(t, 303, resp.Code)
 	//順序注意　assert.Contains 第二引数に第三引数の要素が含まれているか
-	tempCookie := resp.Header().Get("Set-Cookie")
+	mainCookie = resp.Header().Get("Set-Cookie")
+	//ちょうど mysession = valueの部分が取り出せる
+	assert.NotEqual(t, strings.Split(mainCookie, " ")[0], strings.Split(oldCookie, " ")[0])
 
 	req, _ = http.NewRequest("GET", GetMinutesPageRoute, nil)
-	req.Header.Set("Cookie", tempCookie)
+	req.Header.Set("Cookie", mainCookie)
 
 	router.ServeHTTP(resp, req)
 
@@ -402,9 +409,10 @@ func Test_cntGetMessge_not_logined_user(t *testing.T) {
 
 }
 
-//再度ログインが必要なので、一旦コピペで動かしています。
+//再度ログインが必要
 //登録済みのユーザーはログイン可能
-func Test_canLogin_registered_user2(t *testing.T) {
+//session情報は毎回変わる
+func Test_canLogin_registered_user_useDifferentSessionInfo(t *testing.T) {
 
 	resp := httptest.NewRecorder()
 
@@ -422,7 +430,11 @@ func Test_canLogin_registered_user2(t *testing.T) {
 
 	assert.Equal(t, 200, resp.Code)
 	assert.Contains(t, string(body), "success")
+
+	//同じアカウントでも毎回session情報が変わることのテスト
 	mainCookie = resp.Header().Get("Set-Cookie")
+	//ちょうど mysession = valueの部分が取り出せる
+	assert.NotEqual(t, strings.Split(mainCookie, " ")[0], strings.Split(oldCookie, " ")[0])
 }
 
 //登録済みのユーザーはメッセージを送信可能
