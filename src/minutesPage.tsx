@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
-import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
@@ -10,127 +9,8 @@ import MenuIcon from '@material-ui/icons/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import Menu from '@material-ui/core/Menu';
 import AccountCircle from '@material-ui/icons/AccountCircle';
-import Card from '@material-ui/core/Card';
-import CardHeader from '@material-ui/core/CardHeader';
-import CardActions from '@material-ui/core/CardActions';
-import CardContent from '@material-ui/core/CardContent';
-import Avatar from '@material-ui/core/Avatar';
-
-import AudioMessagePostForm from './audioMessageForm';
-import EditMessagePostForm from './editForm';
-import DeleteMessageDialog from './deleteDialog';
-
-const useStylesCard = makeStyles({
-  root: {
-    minWidth: 275,
-    maxWidth: 275,
-    marginTop: 15,
-    marginBottom: 15,
-  },
-  bullet: {
-    display: 'inline-block',
-    margin: '0 2px',
-    transform: 'scale(0.8)',
-  },
-  title: {
-    fontSize: 14,
-  },
-  pos: {
-    marginBottom: 12,
-  },
-});
-
-function GetMessage(props) {
-  const { forceUpdate } = props;
-  const classes = useStylesCard();
-
-  type User = {
-    id: number;
-    name: string;
-  };
-
-  type Message = {
-    addedBy: User;
-    id: number;
-    message: string;
-  };
-
-  type GetMessageResult = Message[];
-  const [data, setData] = useState<GetMessageResult>([]);
-
-  useEffect(() => {
-    // ルート /message に対して GETリクエストを送る
-    // 帰ってきたものをjsonにしてuseStateに突っ込む
-    fetch('/message')
-      .then((res) => res.json())
-      .then(setData);
-  }, [forceUpdate]);
-
-  // ユーザー情報を取得
-  const [userData, setUserData] = useState<User>({ id: 0, name: '' });
-
-  useEffect(() => {
-    fetch('/user')
-      .then((res) => res.json())
-      .then(setUserData);
-  }, []);
-
-  return (
-    // タグが複数できる場合は何らかのタグで全体を囲う
-    <div>
-      {data.map((item) => (
-        <Card className={classes.root} key={item.id}>
-          <CardContent>
-            <CardHeader
-              avatar={<Avatar>{item.addedBy.name}</Avatar>}
-              title={item.addedBy.name}
-            />
-            <Typography variant="body2" component="p">
-              {item.message}
-            </Typography>
-          </CardContent>
-          <CardActions>
-            <EditMessagePostForm
-              prevMessage={item.message}
-              id={item.id.toString()}
-              isHidden={userData.id !== item.addedBy.id}
-            />
-            <DeleteMessageDialog
-              targetMessage={item.message}
-              id={item.id.toString()}
-              isHidden={userData.id !== item.addedBy.id}
-            />
-          </CardActions>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-GetMessage.propTypes = {
-  // このランダム値を変更することで、強制的にサーバーからメッセージを取得させ、最新の情報を入手させる
-  forceUpdate: PropTypes.number,
-};
-
-GetMessage.defaultProps = {
-  forceUpdate: Math.random(),
-};
-
-function MessageSection() {
-  const [randomValue, setRandomValue] = useState<number>(Math.random());
-
-  const onMessageAdded = () => {
-    // フォームによってメッセージが追加されたら、メッセージ一覧を更新する
-    setRandomValue(Math.random());
-  };
-
-  return (
-    <>
-      <AudioMessagePostForm onSubmitSuccessful={onMessageAdded} />
-      <GetMessage forceUpdate={randomValue} />
-    </>
-  );
-}
+import MessageList from './messageList';
+import MeetingList from './meetingList';
 
 const useStylesBar = makeStyles((theme) => ({
   header: {
@@ -214,7 +94,10 @@ function MinuteAppBar() {
 // webpackでバンドルしている関係で存在していないIDが指定される場合がある
 // エラーをそのままにしておくと、エラー以後のレンダリングがされない
 if (document.getElementById('message') != null) {
-  ReactDOM.render(<MessageSection />, document.getElementById('message'));
+  ReactDOM.render(<MessageList />, document.getElementById('message'));
+}
+if (document.getElementById('meetings') != null) {
+  ReactDOM.render(<MeetingList />, document.getElementById('meetings'));
 }
 if (document.getElementById('minuteHeader') != null) {
   ReactDOM.render(<MinuteAppBar />, document.getElementById('minuteHeader'));
