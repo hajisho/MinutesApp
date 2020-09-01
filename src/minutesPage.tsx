@@ -37,9 +37,6 @@ function MinuteAppBar() {
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
-  const handleLogout = () => {
-    window.location.href = '/logout';
-  };
 
   const handleLogout = () => {
     window.location.href = '/logout';
