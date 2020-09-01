@@ -30,20 +30,16 @@ func setupRouter() *gin.Engine {
 	r.LoadHTMLGlob("./dist/public/*.html")
 
 	r.Use(sessions.Sessions("mysession", store))
+	store.Options(sessions.Options{
+		MaxAge:   60 * 60 * 24 * 10, //10日立つと無効になる。それまでは"session time out"が出せるようとっておく
+		Secure:   false,
+		HttpOnly: true,
+	})
+
+	// セッション管理のテーブルを更新
+	r.Use(sessionStoreUpdate())
 	// / に　GETリクエストが飛んできたらhandler関数を実行
 	r.GET("/", returnMainPage)
-	// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
-	r.GET("/message", fetchMessage)
-	// ミーティング一覧を返す
-	r.GET("/api_meetings", handleMeetings)
-	// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
-	r.POST("/add_message", handleAddMessage)
-	// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
-	r.POST("/update_message", handleUpdateMessage)
-	// /update_messageへのPOSTリクエストは、handleDeleteMessage関数でハンドル
-	r.POST("/delete_message", handleDeleteMessage)
-	// ユーザー情報を返す
-	r.GET("/user", fetchUserInfo)
 	// ログインページを返す
 	r.GET("/login", returnLoginPage)
 	// ログイン動作を司る
@@ -52,10 +48,26 @@ func setupRouter() *gin.Engine {
 	r.GET("/register", returnRegisterPage)
 	//　ユーザー登録動作を司る
 	r.POST("/register", postRegister)
+	//ログイン済みを前提とした処理を行う。sessionIDのチェックsessionCheck()を行った上で実行される
+	logedIn := r.Group("/", sessionCheck())
+	{
+		// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
+		logedIn.GET("/message", fetchMessage)
+		// ミーティング一覧を返す
+		logedIn.GET("/api_meetings", handleMeetings)
+		// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
+		logedIn.POST("/add_message", handleAddMessage)
+		// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
+		logedIn.POST("/update_message", handleUpdateMessage)
+		// /update_messageへのPOSTリクエストは、handleDeleteMessage関数でハンドル
+		logedIn.POST("/delete_message", handleDeleteMessage)
+		// ユーザー情報を返す
+		logedIn.GET("/user", fetchUserInfo)
+		// ミーティング一覧のページ
+		logedIn.GET("/meetings", returnMeetingsPage)
+	}
 	//セッション情報の削除
 	r.GET("/logout", postLogout)
-	// ミーティング一覧のページ
-	r.GET("/meetings", returnMeetingsPage)
 
 	r.GET("/entrance", returnEntrancePage)
 
@@ -80,6 +92,29 @@ func returnMainPage(ctx *gin.Context) {
 		ctx.Abort()
 		return
 	}
+
+	if !(SessionExist(user.(string))) {
+		session.Clear()
+		session.Save()
+		// 不当なセッション情報によるアクセス
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid session ID"})
+		ctx.Abort()
+		return
+	}
+
+	if SessionTimeOut(user.(string)) {
+		//セッション有効時間が切れていた場合
+		//セッションからデータを破棄する
+		sessionDelete(user.(string))
+		session.Clear()
+		session.Save()
+
+		sessionDelete(user.(string))
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Session time out"})
+		ctx.Abort()
+		return
+	}
+
 	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "議事録", "header": "minuteHeader", "id": []string{"message"}})
 }
 
@@ -124,13 +159,6 @@ func returnMeetingsPage(ctx *gin.Context) {
 //messagesに含まれるものを jsonで返す
 func fetchMessage(ctx *gin.Context) {
 
-	session := sessions.Default(ctx)
-
-	if session.Get("SessionID") == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
-		return
-	}
-
 	messagesInDB := dbGetAll()
 	// データベースに保存されているメッセージの形式から、クライアントへ返す形式に変換する
 	messages := make([]ResponseMessage, len(messagesInDB))
@@ -158,6 +186,7 @@ func handleAddMessage(ctx *gin.Context) {
 	// POST bodyからメッセージを獲得
 	req := new(AddMessageRequest)
 	err := ctx.BindJSON(req)
+
 	if err != nil {
 		// メッセージがJSONではない、もしくは、content-typeがapplication/jsonになっていない
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request as JSON format is expected"})
@@ -168,19 +197,6 @@ func handleAddMessage(ctx *gin.Context) {
 		// メッセージがない、無効なリクエスト
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to parameter 'message' being empty"})
 		// 帰ることを忘れない
-		return
-	}
-
-	session := sessions.Default(ctx)
-	sessionID := session.Get("SessionID")
-
-	if sessionID == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
-		return
-	}
-
-	if !(SessionExist(sessionID.(string))) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
 		return
 	}
 
@@ -291,12 +307,6 @@ func handleDeleteMessage(ctx *gin.Context) {
 
 // ユーザー自身の情報を返す
 func fetchUserInfo(ctx *gin.Context) {
-	session := sessions.Default(ctx)
-
-	if session.Get("SessionID") == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
-		return
-	}
 
 	user := getSessionUserID(ctx)
 	userInfo := ResponseUserPublic{
@@ -378,7 +388,7 @@ func postLogin(ctx *gin.Context) {
 
 	//セッション管理
 	sessionID := createSession(user.Username)
-	if sessionID == "0" {
+	if sessionID == "" {
 		ctx.Redirect(http.StatusSeeOther, "/login")
 		ctx.Abort()
 		return

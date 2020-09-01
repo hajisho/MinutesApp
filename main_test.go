@@ -1,8 +1,11 @@
 package main
 
 import (
+
 	//"fmt"
+
 	"strings"
+
 	//"reflect"
 	"bytes"
 	"io/ioutil"
@@ -22,9 +25,12 @@ var oldCookie string = " "
 //別アカウントのテスト用
 var subCookie string = " "
 
+//有効期限切れのcookieを扱う用
+var tempCookie string = " "
+
 //ダミーのsession情報
-//jsonStr := `{"UserId":"gadasgadsgadsggwrgjrdjbthgkmd","Password":"rhhrs65uhhenbeszrs4643"}`
-var dummyCookie string = `mysession=MTU5ODA5MDg0NHxEdi1CQkFFQ180SUFBUkFCRUFBQVBmLUNBQUVHYzNSeWFXNW5EQWdBQmxWelpYSkpaQVp6ZEhKcGJtY01Id0FkWjJGa1lYTm5ZV1J6WjJGa2MyZG5kM0puYW5Ka2FtSjBhR2RyYldRPXzDVdeNdyqRk_UaOgI-QqjM_yvCiQA7swpbBWn7F7Ll6w==; Path=/; Expires=Mon, 21 Sep 2020 10:07:24 GMT; Max-Age=0`
+//jsonStr := `{"UserId":"dummy_user","Password":"dumdum00"}`
+var dummyCookie string = `mysession=MTU5ODg0Mjg4NXxEdi1CQkFFQ180SUFBUkFCRUFBQU1fLUNBQUVHYzNSeWFXNW5EQXNBQ1ZObGMzTnBiMjVKUkFaemRISnBibWNNRWdBUU5UTkJTRmRwT1VoMllubFJlblF3ZEE9PXzqHFPM7diSqe2r0Kg2EzePlFc1iOf9Y2hBfzalMTSebA==; Path=/; Expires=Wed, 30 Sep 2020 03:01:25 GMT; Max-Age=2592000`
 
 //サーバーのルーティング
 var router = setupRouter()
@@ -332,10 +338,8 @@ func Test_redirect_minutesPage_not_logined(t *testing.T) {
 	assert.Equal(t, 303, resp.Code)
 }
 
-//必須
 //登録されていないユーザー情報を持ったsessionではアクセスできない
-/*
-func Test_cntAccess_minutesPage_dummySession(t *testing.T){
+func Test_cntAccess_minutesPage_dummySession(t *testing.T) {
 
 	resp := httptest.NewRecorder()
 
@@ -348,9 +352,8 @@ func Test_cntAccess_minutesPage_dummySession(t *testing.T){
 
 	assert.Equal(t, 400, resp.Code)
 	//順序注意　assert.Contains 第二引数に第三引数の要素が含まれているか
-	assert.Contains(t, string(body), "いい感じのエラー")
+	assert.Contains(t, string(body), "Invalid session ID")
 }
-*/
 
 //ログインしたなら議事録ページに行ける
 func Test_canAccess_minutesPage_logined(t *testing.T) {
@@ -572,7 +575,6 @@ func Test_cntUpdateMessge_not_logined_user(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 
 	router.ServeHTTP(resp, req)
-	//fmt.Println(resp.Header().Get("Set-Cookie"))
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 400, resp.Code)
@@ -735,4 +737,209 @@ func Test_canGetUserInfo_logined_user(t *testing.T) {
 	assert.Equal(t, 200, resp.Code)
 	assert.Contains(t, string(body), `{"id":1,"name":"test1234"}`)
 
+}
+
+//有効期限切れのsessionIDの利用をテストするユーザを作成
+func Test_Login_registered_user_tempUse00(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+	//送信するjson
+	jsonStr := `{"UserId":"temp00","Password":"temptemp00"}`
+
+	req, _ := http.NewRequest(
+		"POST",
+		RegisterRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+
+	// Content-Type 設定
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+
+	req, _ = http.NewRequest(
+		"POST",
+		LoginRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+
+	// Content-Type 設定
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+
+	tempCookie = resp.Header().Get("Set-Cookie")
+}
+
+//時間切れのセッションは適宜データベースから破棄されている
+func Test_session_database_update(t *testing.T) {
+
+	//DBのsession情報を時間切れになるように無理やり設定
+	sessionTimeSet10daysLater("temp00")
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", GetMinutesPageRoute, nil)
+	req.Header.Set("Cookie", tempCookie)
+
+	router.ServeHTTP(resp, req)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	//順序注意　assert.Contains 第二引数に第三引数の要素が含まれているか
+	assert.Contains(t, string(body), "Invalid session ID")
+
+}
+
+//有効期限切れのsessionIDの利用をテストするユーザを作成
+func Test_Login_registered_user_tempUse01(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+	//送信するjson
+	jsonStr := `{"UserId":"temp00","Password":"temptemp00"}`
+
+	req, _ := http.NewRequest(
+		"POST",
+		RegisterRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+
+	// Content-Type 設定
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+
+	req, _ = http.NewRequest(
+		"POST",
+		LoginRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+
+	// Content-Type 設定
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+
+	tempCookie = resp.Header().Get("Set-Cookie")
+}
+
+//時間切れのセッションはセッションタイムアウトになる
+func Test_session_timeout(t *testing.T) {
+
+	//DBのsession情報を時間切れになるように無理やり設定
+	sessionTimeSetNow("temp00")
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", GetMinutesPageRoute, nil)
+	req.Header.Set("Cookie", tempCookie)
+
+	router.ServeHTTP(resp, req)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	//順序注意　assert.Contains 第二引数に第三引数の要素が含まれているか
+	assert.Contains(t, string(body), "Session time out")
+
+}
+
+//middleware内全ての処理は登録していないユーザは受け付けない**必ずlogedIn内のリクエスでテストすること**
+//登録していないユーザーはメッセージを送信不可
+func Test_middeleware_logedIn_not_logined_user(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	jsonStr := `{"message":"ジン"}`
+	req, _ := http.NewRequest(
+		"POST",
+		PostMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"Bad Request`)
+
+}
+
+//middleware内全ての処理は不当なセッションIDは受け付けない**必ずlogedIn内のリクエスでテストすること**
+//不当なセッションIDのユーザーはメッセージを送信不可
+func Test_middeleware_logedIn_invalid_user(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+	jsonStr := `{"message":"ジン"}`
+	req, _ := http.NewRequest(
+		"POST",
+		PostMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", dummyCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), "Invalid session ID")
+}
+
+//有効期限切れのsessionIDの利用をテストするユーザを作成
+func Test_Login_registered_user_tempUse02(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+	//送信するjson
+	jsonStr := `{"UserId":"temp00","Password":"temptemp00"}`
+
+	req, _ := http.NewRequest(
+		"POST",
+		RegisterRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+
+	// Content-Type 設定
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+
+	req, _ = http.NewRequest(
+		"POST",
+		LoginRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+
+	// Content-Type 設定
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+
+	tempCookie = resp.Header().Get("Set-Cookie")
+}
+
+//middleware内全ての処理は有効期限の切れたセッションIDは受け付けない**必ずlogedIn内のリクエスでテストすること**
+//有効期限切れのユーザーはメッセージを送信不可
+func Test_middeleware_logedIn_session_timeout(t *testing.T) {
+
+	sessionTimeSetNow("temp00")
+	resp := httptest.NewRecorder()
+	jsonStr := `{"message":"ジン"}`
+	req, _ := http.NewRequest(
+		"POST",
+		PostMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", tempCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), "Session time out")
 }
