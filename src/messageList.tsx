@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import {
-  makeStyles,
-  Card,
-  CardContent,
-  Avatar,
-  Typography,
-  CardHeader,
-  CardActions,
-} from '@material-ui/core';
+import { makeStyles, Card, CardContent, Typography } from '@material-ui/core';
 // eslint-disable-next-line no-unused-vars
 import { Message, User } from './datatypes';
 import EditMessagePostForm from './editForm';
@@ -17,10 +9,8 @@ import AudioMessagePostForm from './audioMessageForm';
 
 const useStylesCard = makeStyles({
   root: {
-    minWidth: 275,
-    maxWidth: 275,
-    marginTop: 15,
-    marginBottom: 15,
+    minWidth: 200,
+    maxWidth: 1000,
   },
   bullet: {
     display: 'inline-block',
@@ -29,9 +19,6 @@ const useStylesCard = makeStyles({
   },
   title: {
     fontSize: 14,
-  },
-  pos: {
-    marginBottom: 12,
   },
 });
 
@@ -61,26 +48,28 @@ function GetMessage({ forceUpdate }) {
       {data.map((item) => (
         <Card className={classes.root} key={item.id}>
           <CardContent>
-            <CardHeader
-              avatar={<Avatar>{item.addedBy.name}</Avatar>}
-              title={item.addedBy.name}
-            />
-            <Typography variant="body2" component="p">
+            <Typography
+              className={classes.title}
+              color="textSecondary"
+              gutterBottom
+              align="left"
+            >
+              {item.addedBy.name}
+              <EditMessagePostForm
+                prevMessage={item.message}
+                id={item.id.toString()}
+                isHidden={userData.id !== item.addedBy.id}
+              />
+              <DeleteMessageDialog
+                targetMessage={item.message}
+                id={item.id.toString()}
+                isHidden={userData.id !== item.addedBy.id}
+              />
+            </Typography>
+            <Typography variant="body2" component="p" align="left">
               {item.message}
             </Typography>
           </CardContent>
-          <CardActions>
-            <EditMessagePostForm
-              prevMessage={item.message}
-              id={item.id.toString()}
-              isHidden={userData.id !== item.addedBy.id}
-            />
-            <DeleteMessageDialog
-              targetMessage={item.message}
-              id={item.id.toString()}
-              isHidden={userData.id !== item.addedBy.id}
-            />
-          </CardActions>
         </Card>
       ))}
     </div>
