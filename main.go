@@ -15,6 +15,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"sort"
+	"fmt"
 )
 
 func setupRouter() *gin.Engine {
@@ -461,6 +462,7 @@ func handleImportantWords(ctx *gin.Context){
 		sortedTfIdf = append(sortedTfIdf, e)
 	}
 	sort.Sort(sortedTfIdf)
+	//上位10個(1０未満だったらその数だけ)を返す
 	n := 10
 	if n > len(sortedTfIdf){
 		n = len(sortedTfIdf)
@@ -474,6 +476,7 @@ func handleImportantWords(ctx *gin.Context){
 	}
 	ctx.JSON(http.StatusOK, result)
 }
+//以下mapのvalueを基準としてソートするために必要なもの
 type Items struct {
     name  string
     value float64
@@ -492,6 +495,7 @@ func (l List) Less(i, j int) bool {
     if l[i].value == l[j].value {
         return (l[i].name < l[j].name)
     } else {
-        return (l[i].value < l[j].value)
+        return (l[i].value > l[j].value)
     }
 }
+//ここまで
