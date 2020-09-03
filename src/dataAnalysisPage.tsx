@@ -9,6 +9,7 @@ import Typography from '@material-ui/core/Typography';
 import CloseIcon from '@material-ui/icons/Close';
 import Slide from '@material-ui/core/Slide';
 import { TransitionProps } from '@material-ui/core/transitions';
+import AssessmentOutlinedIcon from '@material-ui/icons/AssessmentOutlined';
 import GetImportantWords from './getImportantWords';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -43,7 +44,12 @@ export default function DataAnalysisPage() {
 
   return (
     <div>
-      <Button variant="outlined" color="primary" onClick={handleClickOpen}>
+      <Button
+        variant="outlined"
+        color="primary"
+        onClick={handleClickOpen}
+        endIcon={<AssessmentOutlinedIcon />}
+      >
         Data Analysis
       </Button>
       <Dialog
