@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
+	"sort"
 )
 
 func setupRouter() *gin.Engine {
@@ -65,6 +66,8 @@ func setupRouter() *gin.Engine {
 		logedIn.GET("/user", fetchUserInfo)
 		// ミーティング一覧のページ
 		logedIn.GET("/meetings", returnMeetingsPage)
+		// 重要と考えられる単語を返す
+		logedIn.GET("/important_words", handleImportantWords)
 	}
 	//セッション情報の削除
 	r.GET("/logout", postLogout)
@@ -427,4 +430,68 @@ func handleMeetings(ctx *gin.Context) {
 		}
 	}
 	ctx.JSON(http.StatusOK, ret)
+}
+
+//tfidfを元に重要度を計算し、重要と考えられる単語を返す
+func handleImportantWords(ctx *gin.Context){
+	messagesInDB := dbGetAll()
+	messages := make([]string, len(messagesInDB))
+	for i, msg := range messagesInDB {
+		messages[i] = msg.Message;
+	}
+	allTfIdf := allTfIdf(messages)
+	bestTfIdf := map[string]float64{}
+
+	//複数文書に現れる単語のtfidfは最も大きい値を採用
+	for _, tfidfs := range allTfIdf{
+		for term := range tfidfs{
+			if _, ok := bestTfIdf[term]; ok{
+				if tfidfs[term] > bestTfIdf[term]{
+					bestTfIdf[term] = tfidfs[term]
+				}
+			}else{
+				bestTfIdf[term] = tfidfs[term]
+			}
+		}
+	}
+	//tfidfが大きい順にソート
+	sortedTfIdf := List{}
+	for k, v := range bestTfIdf{
+		e := Items{k, v}
+		sortedTfIdf = append(sortedTfIdf, e)
+	}
+	sort.Sort(sortedTfIdf)
+	n := 10
+	if n > len(sortedTfIdf){
+		n = len(sortedTfIdf)
+	}
+	result := make([]string, n)
+	for i, item := range sortedTfIdf{
+		if i == n{
+			break
+		}
+		result[i] = item.name
+	}
+	ctx.JSON(http.StatusOK, result)
+}
+type Items struct {
+    name  string
+    value float64
+}
+type List []Items
+
+func (l List) Len() int {
+    return len(l)
+}
+
+func (l List) Swap(i, j int) {
+    l[i], l[j] = l[j], l[i]
+}
+
+func (l List) Less(i, j int) bool {
+    if l[i].value == l[j].value {
+        return (l[i].name < l[j].name)
+    } else {
+        return (l[i].value < l[j].value)
+    }
 }

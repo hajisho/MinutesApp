@@ -45,6 +45,7 @@ var DeleteMessageRoute string = "/delete_message"
 var LoginRoute string = "/login"
 var RegisterRoute string = "/register"
 var LogoutRoute string = "/logout"
+var GetImportantWordsRoute string = "/important_words"
 
 //エントランスページはセッション情報がなくても取得できる
 func Test_entrancePage(t *testing.T) {
@@ -703,6 +704,85 @@ func Test_canDeleteMessge_same_user(t *testing.T) {
 
 	assert.Equal(t, 200, resp.Code)
 	assert.NotContains(t, string(body), `[{"id":1,"addedBy":{"id":1,"name":"test1234"},"message":"ストロングゼロ"}]`)
+}
+
+//ログインしているユーザは重要単語を取得できる
+func Test_canGetImportantWords_logined_user(t *testing.T) {
+	resp := httptest.NewRecorder()
+
+	jsonStr := `{"message":"寿司が食べたい。"}`
+	req, _ := http.NewRequest(
+		"POST",
+		PostMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	req, _ = http.NewRequest("GET", GetImportantWordsRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), `["。","が","たい","寿司","食べ"]`)
+}
+
+//登録していないユーザーは重要単語の取得不可
+func Test_cntGetImportantWords_not_logined_user(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest(
+		"GET",
+		GetImportantWordsRoute,
+		nil,
+	)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `"error":"Bad Request"`)
+	//念のため、後のテストのために"寿司が食べたい。"は消しておく
+	resp = httptest.NewRecorder()
+
+	jsonStr := `{"id":"2"}`
+	req, _ = http.NewRequest(
+		"POST",
+		DeleteMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	resp = httptest.NewRecorder()
+
+	req, _ = http.NewRequest("GET", GetMessageRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.NotContains(t, string(body), `[{"id":1,"addedBy":{"id":1,"name":"test1234"},"message":"寿司が食べたい。"}]`)
 }
 
 //ログインしていないユーザーはユーザー情報は帰らない
