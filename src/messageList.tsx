@@ -18,6 +18,7 @@ import EditMessagePostForm from './editForm';
 import DeleteMessageDialog from './deleteDialog';
 import AudioMessagePostForm from './audioMessageForm';
 import MessagePostForm from './messageForm';
+import DataAnalysisPage from './dataAnalysisPage';
 
 const useStylesCard = makeStyles({
   root: {
@@ -150,6 +151,7 @@ export default function MessageList() {
 
   return (
     <>
+      <DataAnalysisPage />
       <div className={classes.tab}>
         <AppBar position="static" color="default">
           <Tabs
@@ -185,7 +187,7 @@ export default function MessageList() {
           </TabPanel>
         </SwipeableViews>
       </div>
-
+      <AudioMessagePostForm onSubmitSuccessful={onMessageAdded} />
       <GetMessage forceUpdate={randomValue} />
     </>
   );
