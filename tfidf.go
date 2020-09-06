@@ -138,3 +138,27 @@ func allTfIdf(ds []string) []map[string]float64 {
 func Tfidf(t, d string, ds []string) float64 {
 	return Tf(t, d) * (Idf(t, ds) + 1)
 }
+
+func allTfIdfVec(ds []string) [][]float64{
+  tfidfs := allTfIdf(ds)
+  idfs := AllIdf(ds)
+  vocab := make([]string, len(idfs))
+  index := 0
+  for term, _ := range idfs{
+    vocab[index] = term
+    index++
+  }
+  tfidfVec := make([][]float64, len(ds))
+  for i, tfidf := range tfidfs{
+    vec := make([]float64, len(vocab))
+    for _, term := range vocab{
+      if _, ok := tfidf[term]; ok{
+        vec = append(vec, tfidf[term])
+      } else{
+        vec = append(vec, 0)
+      }
+    }
+    tfidfVec[i] = vec
+  }
+  return tfidfVec
+}

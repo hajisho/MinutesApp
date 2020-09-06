@@ -46,6 +46,7 @@ var LoginRoute string = "/login"
 var RegisterRoute string = "/register"
 var LogoutRoute string = "/logout"
 var GetImportantWordsRoute string = "/important_words"
+var GetImportantSentencesRoute string = "/important_sentences"
 
 //エントランスページはセッション情報がなくても取得できる
 func Test_entrancePage(t *testing.T) {
@@ -782,7 +783,295 @@ func Test_cntGetImportantWords_not_logined_user(t *testing.T) {
 	body, _ = ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 200, resp.Code)
-	assert.NotContains(t, string(body), `[{"id":1,"addedBy":{"id":1,"name":"test1234"},"message":"寿司が食べたい。"}]`)
+	assert.NotContains(t, string(body), `[{"id":2,"addedBy":{"id":1,"name":"test1234"},"message":"寿司が食べたい。"}]`)
+}
+
+//ログインしている人は重要な文を取得できる
+func Test_canGetImportantSentences_logined_user(t *testing.T) {
+	resp := httptest.NewRecorder()
+
+	jsonStr := `{"message":"支払い方法変更"}`
+	req, _ := http.NewRequest(
+		"POST",
+		PostMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	jsonStr = `{"message":"別の支払い方法を希望"}`
+	req, _ = http.NewRequest(
+		"POST",
+		PostMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	jsonStr = `{"message":"支払い方法変更お願いいたします"}`
+	req, _ = http.NewRequest(
+		"POST",
+		PostMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	jsonStr = `{"message":"デビッドカード支払いはできないのでしょうか 別の支払い方方法はないのでしょうか？"}`
+	req, _ = http.NewRequest(
+		"POST",
+		PostMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	jsonStr = `{"message":"クレジットカードでの支払いでしたが、フィッシング詐欺にあってクレジットカードを停止しました。支払い方法を変更してコンビニ支払いにしたいので支払い方法をお知らせください。"}`
+	req, _ = http.NewRequest(
+		"POST",
+		PostMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	jsonStr = `{"message":"お世話になっております。次回の[製品名]のお支払い方法をクレジットカードにしたいのですが、[不満内容]その先がわかりません。お返事お願いします。[氏名]"}`
+	req, _ = http.NewRequest(
+		"POST",
+		PostMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	req, _ = http.NewRequest("GET", GetImportantSentencesRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), `["別の支払い方法を希望","クレジットカードでの支払いでしたが、フィッシング詐欺にあってクレジットカードを停止しました。支払い方法を変更してコンビニ支払いにしたいので支払い方法をお知らせください。","支払い方法変更お願いいたします","お世話になっております。次回の[製品名]のお支払い方法をクレジットカードにしたいのですが、[不満内容]その先がわかりません。お返事お願いします。[氏名]","支払い方法変更"]`)
+}
+
+//登録していないユーザーは重要文の取得不可
+func Test_cntGetImportantSentences_not_logined_user(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest(
+		"GET",
+		GetImportantSentencesRoute,
+		nil,
+	)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `"error":"Bad Request"`)
+	//念のため、後のテストのために前に入力した文章は消しておく
+	resp = httptest.NewRecorder()
+
+	jsonStr := `{"id":"3"}`
+	req, _ = http.NewRequest(
+		"POST",
+		DeleteMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	resp = httptest.NewRecorder()
+
+	req, _ = http.NewRequest("GET", GetMessageRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.NotContains(t, string(body), `[{"id":3,"addedBy":{"id":1,"name":"test1234"},"message":"支払い方法変更"}]`)
+
+	jsonStr = `{"id":"4"}`
+	req, _ = http.NewRequest(
+		"POST",
+		DeleteMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	resp = httptest.NewRecorder()
+
+	req, _ = http.NewRequest("GET", GetMessageRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.NotContains(t, string(body), `[{"id":4,"addedBy":{"id":1,"name":"test1234"},"message":"別の支払い方法を希望"}]`)
+
+	jsonStr = `{"id":"5"}`
+	req, _ = http.NewRequest(
+		"POST",
+		DeleteMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	resp = httptest.NewRecorder()
+
+	req, _ = http.NewRequest("GET", GetMessageRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.NotContains(t, string(body), `[{"id":5,"addedBy":{"id":1,"name":"test1234"},"message":"支払い方法変更お願いいたします"}]`)
+
+	jsonStr = `{"id":"6"}`
+	req, _ = http.NewRequest(
+		"POST",
+		DeleteMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	resp = httptest.NewRecorder()
+
+	req, _ = http.NewRequest("GET", GetMessageRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.NotContains(t, string(body), `[{"id":6,"addedBy":{"id":1,"name":"test1234"},"message":"デビッドカード支払いはできないのでしょうか 別の支払い方方法はないのでしょうか？"}]`)
+
+	jsonStr = `{"id":"7"}`
+	req, _ = http.NewRequest(
+		"POST",
+		DeleteMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	resp = httptest.NewRecorder()
+
+	req, _ = http.NewRequest("GET", GetMessageRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.NotContains(t, string(body), `[{"id":7,"addedBy":{"id":1,"name":"test1234"},"message":"クレジットカードでの支払いでしたが、フィッシング詐欺にあってクレジットカードを停止しました。支払い方法を変更してコンビニ支払いにしたいので支払い方法をお知らせください。"}]`)
+
+	jsonStr = `{"id":"8"}`
+	req, _ = http.NewRequest(
+		"POST",
+		DeleteMessageRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	resp = httptest.NewRecorder()
+
+	req, _ = http.NewRequest("GET", GetMessageRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.NotContains(t, string(body), `[{"id":8,"addedBy":{"id":1,"name":"test1234"},"message":"お世話になっております。次回の[製品名]のお支払い方法をクレジットカードにしたいのですが、[不満内容]その先がわかりません。お返事お願いします。[氏名]"}]`)
 }
 
 //ログインしていないユーザーはユーザー情報は帰らない

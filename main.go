@@ -15,7 +15,6 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"sort"
-	"fmt"
 )
 
 func setupRouter() *gin.Engine {
@@ -69,6 +68,8 @@ func setupRouter() *gin.Engine {
 		logedIn.GET("/meetings", returnMeetingsPage)
 		// 重要と考えられる単語を返す
 		logedIn.GET("/important_words", handleImportantWords)
+		//　重要と考えられる文を返す
+		logedIn.GET("/important_sentences", handleImportantSentences)
 	}
 	//セッション情報の削除
 	r.GET("/logout", postLogout)
@@ -499,3 +500,24 @@ func (l List) Less(i, j int) bool {
     }
 }
 //ここまで
+
+func handleImportantSentences(ctx *gin.Context){
+	messagesInDB := dbGetAll()
+	messages := make([]string, len(messagesInDB))
+	for i, msg := range messagesInDB {
+		messages[i] = msg.Message;
+	}
+	ranking := getImportantSentence(messages)
+	n := 5
+	if n > len(messages){
+		n = len(messages)
+	}
+	result := make([]string, n)
+	for i, rank := range ranking{
+		if i == n{
+			break
+		}
+		result[i] = messages[rank]
+	}
+	ctx.JSON(http.StatusOK, result)
+}
