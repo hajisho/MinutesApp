@@ -11,6 +11,7 @@ import Slide from '@material-ui/core/Slide';
 import { TransitionProps } from '@material-ui/core/transitions';
 import AssessmentOutlinedIcon from '@material-ui/icons/AssessmentOutlined';
 import GetImportantWords from './getImportantWords';
+import GetImportantSentences from './getImportantSentences';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -73,7 +74,10 @@ export default function DataAnalysisPage() {
             </Typography>
           </Toolbar>
         </AppBar>
-        <GetImportantWords />
+        <div className="analysis1">
+          <GetImportantWords />
+          <GetImportantSentences />
+        </div>
       </Dialog>
     </div>
   );
