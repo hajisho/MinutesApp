@@ -18,6 +18,7 @@ const useStyles = makeStyles((theme) =>
 
 export default function AudioMessagePostForm(props) {
   const [working, setWorking] = useState<boolean>(false);
+  const [action, setAction] = useState<String>('Start');
   const classes = useStyles();
 
   if ('SpeechRecognition' in window) {
@@ -79,6 +80,7 @@ export default function AudioMessagePostForm(props) {
   };
 
   const handleSubmit = (event: React.FormEvent) => {
+    setAction('Recording Now');
     setWorking(true);
     try {
       // ページが更新されないようにする
@@ -99,7 +101,7 @@ export default function AudioMessagePostForm(props) {
         className={classes.button}
         onClick={handleSubmit}
       >
-        Start
+        {action}
       </Button>
       <Button
         disabled={working}
@@ -107,6 +109,7 @@ export default function AudioMessagePostForm(props) {
         color="secondary"
         className={classes.button}
         onClick={() => {
+          setAction('Start');
           window.location.href = '/';
         }}
       >

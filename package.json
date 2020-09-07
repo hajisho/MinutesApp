@@ -46,6 +46,7 @@
     "gulp-eslint": "^6.0.0",
     "husky": "^4.2.5",
     "lint-staged": "^10.2.11",
+    "material-table": "^1.69.0",
     "prettier": "^2.0.5",
     "prop-type": "0.0.1",
     "react": "^16.13.1",
