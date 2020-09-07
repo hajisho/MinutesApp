@@ -22,6 +22,10 @@ const useStyles = makeStyles((theme: Theme) =>
       marginLeft: theme.spacing(2),
       flex: 1,
     },
+    analysis: {
+      width: 500,
+      margin: theme.spacing(1),
+    },
   })
 );
 const transition = React.forwardRef(function Transition(
@@ -50,6 +54,7 @@ export default function DataAnalysisPage() {
         color="primary"
         onClick={handleClickOpen}
         endIcon={<AssessmentOutlinedIcon />}
+        className={classes.analysis}
       >
         Data Analysis
       </Button>

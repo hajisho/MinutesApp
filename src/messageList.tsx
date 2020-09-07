@@ -40,6 +40,9 @@ const useTabStyles = makeStyles((theme) => ({
     backgroundColor: theme.palette.background.paper,
     width: 500,
   },
+  analysis: {
+    width: 500,
+  },
 }));
 
 interface TabPanelProps {
@@ -187,7 +190,6 @@ export default function MessageList() {
           </TabPanel>
         </SwipeableViews>
       </div>
-      <AudioMessagePostForm onSubmitSuccessful={onMessageAdded} />
       <GetMessage forceUpdate={randomValue} />
     </>
   );
