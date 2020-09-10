@@ -10,7 +10,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import Menu from '@material-ui/core/Menu';
 import AccountCircle from '@material-ui/icons/AccountCircle';
 import MessageList from './messageList';
-import MeetingList from './meetingList';
+import Meeting from './meetingList';
 
 const useStylesBar = makeStyles((theme) => ({
   header: {
@@ -96,8 +96,9 @@ function MinuteAppBar() {
 if (document.getElementById('message') != null) {
   ReactDOM.render(<MessageList />, document.getElementById('message'));
 }
+
 if (document.getElementById('meetings') != null) {
-  ReactDOM.render(<MeetingList />, document.getElementById('meetings'));
+  ReactDOM.render(<Meeting />, document.getElementById('meetings'));
 }
 if (document.getElementById('minuteHeader') != null) {
   ReactDOM.render(<MinuteAppBar />, document.getElementById('minuteHeader'));

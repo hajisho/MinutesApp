@@ -75,7 +75,7 @@ function GetMessage({ forceUpdate }) {
   useEffect(() => {
     // ルート /message に対して GETリクエストを送る
     // 帰ってきたものをjsonにしてuseStateに突っ込む
-    fetch('/message')
+    fetch(`${window.location.pathname}/message`)
       .then((res) => res.json())
       .then(setData);
   }, [forceUpdate]);
