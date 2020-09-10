@@ -160,7 +160,7 @@ func sessionCheck() gin.HandlerFunc {
 
 		// セッションがない場合
 		if sessionID == nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+			ctx.Redirect(http.StatusSeeOther, "/entrance")
 			ctx.Abort()
 			return
 		} else if !(SessionExist(sessionID.(string))) {
