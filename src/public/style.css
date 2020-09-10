@@ -12,3 +12,7 @@ h1 {
 p {
   white-space: pre-wrap;
 }
+
+.analysis1{
+	display: flex;
+}

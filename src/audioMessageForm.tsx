@@ -97,7 +97,7 @@ export default function AudioMessagePostForm(props) {
         disabled={working}
         variant="contained"
         color="primary"
-        startIcon={<KeyboardVoiceIcon />}
+        endIcon={<KeyboardVoiceIcon />}
         className={classes.button}
         onClick={handleSubmit}
       >
