@@ -64,6 +64,10 @@ func setupRouter() *gin.Engine {
 			mtgIn.GET("/message", fetchMessage)
 			// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
 			mtgIn.POST("/add_message", handleAddMessage)
+			// 重要と考えられる単語を返す
+			mtgIn.GET("/important_words", handleImportantWords)
+			//　重要と考えられる文を返す
+			mtgIn.GET("/important_sentences", handleImportantSentences)
 		}
 		// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
 		logedIn.POST("/update_message", handleUpdateMessage)
@@ -71,10 +75,6 @@ func setupRouter() *gin.Engine {
 		logedIn.POST("/delete_message", handleDeleteMessage)
 		// ユーザー情報を返す
 		logedIn.GET("/user", fetchUserInfo)
-		// 重要と考えられる単語を返す
-		logedIn.GET("/important_words", handleImportantWords)
-		//　重要と考えられる文を返す
-		logedIn.GET("/important_sentences", handleImportantSentences)
 	}
 	//セッション情報の削除
 	r.GET("/logout", postLogout)
@@ -459,7 +459,11 @@ func postLogout(ctx *gin.Context) {
 
 //tfidfを元に重要度を計算し、重要と考えられる単語を返す
 func handleImportantWords(ctx *gin.Context){
-	messagesInDB := dbGetAll()
+	m,_ := strconv.Atoi(ctx.Param("meetingID"))
+	meetingID := uint(m)
+
+	messagesInDB := MeetingMessageGetAll(meetingID)
+
 	messages := make([]string, len(messagesInDB))
 	for i, msg := range messagesInDB {
 		messages[i] = msg.Message;
@@ -525,7 +529,10 @@ func (l List) Less(i, j int) bool {
 //ここまで
 
 func handleImportantSentences(ctx *gin.Context){
-	messagesInDB := dbGetAll()
+	m,_ := strconv.Atoi(ctx.Param("meetingID"))
+	meetingID := uint(m)
+
+	messagesInDB := MeetingMessageGetAll(meetingID)
 	messages := make([]string, len(messagesInDB))
 	for i, msg := range messagesInDB {
 		messages[i] = msg.Message;

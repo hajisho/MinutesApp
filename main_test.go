@@ -51,8 +51,8 @@ var DeleteMessageRoute string = "/delete_message"
 var LoginRoute string = "/login"
 var RegisterRoute string = "/register"
 var LogoutRoute string = "/logout"
-var GetImportantWordsRoute string = "/important_words"
-var GetImportantSentencesRoute string = "/important_sentences"
+var GetImportantWordsRoute string = GetMinutesPageRoute + "/important_words"
+var GetImportantSentencesRoute string = GetMinutesPageRoute + "/important_sentences"
 
 //エントランスページはセッション情報がなくても取得できる
 func Test_entrancePage(t *testing.T) {
@@ -907,8 +907,8 @@ func Test_cntGetImportantWords_not_logined_user(t *testing.T) {
 	router.ServeHTTP(resp, req)
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 400, resp.Code)
-	assert.Contains(t, string(body), `"error":"Bad Request"`)
+	assert.Equal(t, 303, resp.Code)
+	//assert.Contains(t, string(body), `"error":"Bad Request"`)
 	//念のため、後のテストのために"寿司が食べたい。"は消しておく
 	resp = httptest.NewRecorder()
 
@@ -1060,8 +1060,8 @@ func Test_cntGetImportantSentences_not_logined_user(t *testing.T) {
 	router.ServeHTTP(resp, req)
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 400, resp.Code)
-	assert.Contains(t, string(body), `"error":"Bad Request"`)
+	assert.Equal(t, 303, resp.Code)
+	//assert.Contains(t, string(body), `"error":"Bad Request"`)
 	//念のため、後のテストのために前に入力した文章は消しておく
 	resp = httptest.NewRecorder()
 

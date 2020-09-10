@@ -33,7 +33,7 @@ export default function GetImportantSentences() {
   useEffect(() => {
     // ルート /message に対して GETリクエストを送る
     // 帰ってきたものをjsonにしてuseStateに突っ込む
-    fetch('/important_sentences')
+    fetch(`${window.location.pathname}/important_sentences`)
       .then((res) => res.json())
       .then(setData);
   }, []);
