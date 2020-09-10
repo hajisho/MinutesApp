@@ -38,6 +38,8 @@ func setupRouter() *gin.Engine {
 
 	// セッション管理のテーブルを更新
 	r.Use(sessionStoreUpdate())
+	//ミーティング一覧のページ
+	r.GET("/", returnMeetingsPage)
 	// ログインページを返す
 	r.GET("/login", returnLoginPage)
 	// ログイン動作を司る
@@ -49,21 +51,19 @@ func setupRouter() *gin.Engine {
 	//ログイン済みを前提とした処理を行う。sessionIDのチェックsessionCheck()を行った上で実行される
 	logedIn := r.Group("/", sessionCheck())
 	{
-		//ミーティング一覧のページ
-		logedIn.GET("/", returnMeetingsPage)
 		// ミーティング一覧を返す
-		logedIn.GET("/meeting", handleGetMeetings)
-		//ミーティング一覧のページ
-		logedIn.POST("/meeting", handlePostMeetings)
+		logedIn.GET("/meetings", handleGetMeetings)
+		// ミーティングの追加
+		logedIn.POST("/meetings", handlePostMeetings)
 
-		var MeetingRoot string = "/meeting/:meetingID"
-
-
-		logedIn.GET(MeetingRoot, returnMinutesPage)
-		// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
-		logedIn.GET(MeetingRoot + "/message", fetchMessage)
-		// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
-		logedIn.POST(MeetingRoot + "/add_message", handleAddMessage)
+		mtgIn := logedIn.Group("/meetings/:meetingID", meetingExistCheck())
+		{
+			mtgIn.GET(".", returnMinutesPage)
+			// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
+			mtgIn.GET("/message", fetchMessage)
+			// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
+			mtgIn.POST("/add_message", handleAddMessage)
+		}
 		// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
 		logedIn.POST("/update_message", handleUpdateMessage)
 		// /delete_messageへのPOSTリクエストは、handleDeleteMessage関数でハンドル
@@ -87,45 +87,30 @@ func main() {
 	router.Run(":10000")
 }
 
+func meetingExistCheck() gin.HandlerFunc {
+	return func(ctx *gin.Context){
+		m,_ := strconv.Atoi(ctx.Param("meetingID"))
+		meetingID := uint(m)
+
+		meeting := getMeetingByID(meetingID)
+
+		if(meeting.ID == 0){
+			ctx.JSON(http.StatusNotFound, gin.H{"message": "Not Found"})
+			ctx.Abort()
+			return
+		}
+		return
+	}
+}
+
 func returnMinutesPage(ctx *gin.Context) {
-	//Cookieがなければログインページにリダイレクト　のつもり
-	// 下記の関数、sessionCeckで確認しているから、実際には必要ないはず。要らなければ削除
-	/*
-	session := sessions.Default(ctx)
-	user := session.Get("SessionID")
-	if user == nil {
-		ctx.Redirect(http.StatusSeeOther, "/entrance")
-		ctx.Abort()
-		return
-	}
 
-	if !(SessionExist(user.(string))) {
-		session.Clear()
-		session.Save()
-		// 不当なセッション情報によるアクセス
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid session ID"})
-		ctx.Abort()
-		return
-	}
-
-	if SessionTimeOut(user.(string)) {
-		//セッション有効時間が切れていた場合
-		//セッションからデータを破棄する
-		sessionDelete(user.(string))
-		session.Clear()
-		session.Save()
-
-		sessionDelete(user.(string))
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Session time out"})
-		ctx.Abort()
-		return
-	}
-  */
 	m,_ := strconv.Atoi(ctx.Param("meetingID"))
 	meetingID := uint(m)
 
-	meetingName := getMeetingByID(meetingID).Name
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": meetingName, "header": "minuteHeader", "id": []string{"message"}})
+	meeting := getMeetingByID(meetingID)
+
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": meeting.Name, "header": "minuteHeader", "id": []string{"message"}})
 }
 
 // ResponseUserPublic は、公開ユーザー情報がクライアントへ返される時の形式です。
@@ -164,7 +149,40 @@ func returnEntrancePage(ctx *gin.Context) {
 }
 
 func returnMeetingsPage(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Meetings", "header": "minuteHeader", "id": []string{"meetings"}})
+	//Cookieがなければログインページにリダイレクト　のつもり
+	// 下記の関数、sessionCeckで確認しているから、実際には必要ないはず。要らなければ削除
+
+	session := sessions.Default(ctx)
+	user := session.Get("SessionID")
+	if user == nil {
+		ctx.Redirect(http.StatusSeeOther, "/entrance")
+		ctx.Abort()
+		return
+	}
+
+	if !(SessionExist(user.(string))) {
+		session.Clear()
+		session.Save()
+		// 不当なセッション情報によるアクセス
+		ctx.Redirect(http.StatusSeeOther, "/entrance")
+		ctx.Abort()
+		return
+	}
+
+	if SessionTimeOut(user.(string)) {
+		//セッション有効時間が切れていた場合
+		//セッションからデータを破棄する
+		sessionDelete(user.(string))
+		session.Clear()
+		session.Save()
+
+		sessionDelete(user.(string))
+		ctx.Redirect(http.StatusSeeOther, "/entrance")
+		ctx.Abort()
+		return
+	}
+
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Meetings", "header": "minuteHeader", "id": []string{"serverMessage","meetings"}})
 }
 
 //messagesに含まれるものを jsonで返す

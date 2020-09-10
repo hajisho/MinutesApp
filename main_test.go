@@ -37,10 +37,11 @@ var router = setupRouter()
 
 //テストのためのmeetingインスタンス
 var GetSelectMeetingPageRoute string = "/"
-var GetMeetingRoute string = "/meeting"
-var PostMeetingRoute string = "/meeting"
+var GetMeetingRoute string = "/meetings"
+var PostMeetingRoute string = "/meetings"
 
-var GetMinutesPageRoute string = "/meeting/1"
+var GetMinutesPageRoute string = "/meetings/1"
+var DummyMinutesPageRoute string = "/meetings/1234"
 var EntranceRoute string = "/entrance"
 var GetUserInfo string = "/user"
 var GetMessageRoute string = GetMinutesPageRoute + "/message"
@@ -353,11 +354,11 @@ func Test_cntAccess_meetingPage_dummySession(t *testing.T) {
 
 	router.ServeHTTP(resp, req)
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	//body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 400, resp.Code)
+	assert.Equal(t, 303, resp.Code)
 	//順序注意　assert.Contains 第二引数に第三引数の要素が含まれているか
-	assert.Contains(t, string(body), "Invalid session ID")
+	//assert.Contains(t, string(body), "Invalid session ID")
 }
 
 //ログインしたなら議事録一覧ページに行ける
@@ -510,6 +511,19 @@ func Test_canAccess_minutesPage_logined(t *testing.T) {
 	assert.Equal(t, 200, resp.Code)
 	//順序注意　assert.Contains 第二引数に第三引数の要素が含まれているか
 	assert.Contains(t, string(body), "<title>議事録テスト</title>")
+}
+
+//存在しない議事録ページにはいけない
+func Test_cntAccess_minutesPage_notExist(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", DummyMinutesPageRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, 404, resp.Code)
 }
 
 //ログアウト後に議事録ページにいけない

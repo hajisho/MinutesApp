@@ -24,7 +24,7 @@ deleted_at → DeletedAt
 type Message struct {
 	gorm.Model
 	Message   string
-	MeetingID uint
+	MeetingID uint `gorm:"column:meeting_id";`
 	UserID    uint
 }
 
@@ -42,7 +42,7 @@ type Meeting struct {
 
 type Entry struct {
 	gorm.Model
-	MeetingID int `gorm:"unique;not null"`
+	MeetingID int `gorm:"unique;not null;column:meeting_id;"`
 	UserID    uint
 }
 
@@ -97,8 +97,9 @@ func MeetingMessageGetAll(meetingID uint) []Message {
 		panic("データベース開ません(dbGetAll)")
 	}
 	var messages []Message
-	db.First(&messages, "meetingID = ?", meetingID)
-	db.Order("created_at desc").Find(&messages) //db.Find(&messages)で構造体Messageに対するテーブルの要素全てを取得し、それをOrder("created_at desc")で新しいものが上に来るように並び替えている
+	//カラム名は自動でスネークケース
+	//MeetingID => meeting_id
+	db.Order("created_at desc").Find(&messages, "meeting_id = ?", meetingID) //db.Find(&messages)で構造体Messageに対するテーブルの要素全てを取得し、それをOrder("created_at desc")で新しいものが上に来るように並び替えている
 	db.Close()
 	return messages
 }
@@ -199,29 +200,28 @@ func getAllMeeting() []Meeting {
 	}
 	defer db.Close()
 	meeting := make([]Meeting, 0)
-	db.Order("updated_at DESC").Find(&meeting)
+	db.Order("created_at desc").Find(&meeting)
 	return meeting
 }
 
-func getMeetingByID(id uint) Meeting {
+func getMeetingByID(meetingID uint) Meeting {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
 		panic("データベース開ません(getUserById)")
 	}
 	defer db.Close()
 	var meeting Meeting
-	db.First(&meeting, meeting)
+	db.Find(&meeting, "id = ?", meetingID)
 	return meeting
 }
 
-//DB追加
-//追加したいメッセージは、dbInsert(message.Message, userID)のような感じで呼べば追加される
+//meeting追加
 func createMeeting(meeting string, userID uint) error{
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
 		panic("データベース開ません(dbInsert)")
 	}
-	if err := db.Create(&Meeting{ Name: meeting, UserID:  userID,}).Error; err != nil {
+	if err := db.Create(&Meeting{ Name: meeting, UserID:  userID}).Error; err != nil {
 		return err
 	}
 
