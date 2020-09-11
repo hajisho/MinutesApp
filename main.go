@@ -94,7 +94,6 @@ func main() {
 	router.Run(":10000")
 }
 
-
 // ResponseUserPublic は、公開ユーザー情報がクライアントへ返される時の形式です。
 // JSON形式へマーシャルできます。
 type ResponseUserPublic struct {
@@ -112,19 +111,19 @@ type ResponseMessage struct {
 
 // ResponseMeeting は、ミーティングがクライアントへ返される時の形式です。
 type ResponseMeeting struct {
-	ID uint `json:"id"`
+	ID   uint   `json:"id"`
 	Name string `json:"name"`
 }
 
 //URLで指定されたIDを持つ議事録があるかを調べるミドルウェア
 func meetingExistCheck() gin.HandlerFunc {
-	return func(ctx *gin.Context){
-		m,_ := strconv.Atoi(ctx.Param("meetingID"))
+	return func(ctx *gin.Context) {
+		m, _ := strconv.Atoi(ctx.Param("meetingID"))
 		meetingID := uint(m)
 
 		meeting := getMeetingByID(meetingID)
 
-		if(meeting.ID == 0){
+		if meeting.ID == 0 {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
 			ctx.Abort()
 			return
@@ -136,14 +135,13 @@ func meetingExistCheck() gin.HandlerFunc {
 //議事録本体ページ
 func returnMinutesPage(ctx *gin.Context) {
 
-	m,_ := strconv.Atoi(ctx.Param("meetingID"))
+	m, _ := strconv.Atoi(ctx.Param("meetingID"))
 	meetingID := uint(m)
 
 	meeting := getMeetingByID(meetingID)
 
 	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": meeting.Name, "header": "minuteHeader", "id": []string{"message"}})
 }
-
 
 //ログインページのhtmlを返す
 func returnLoginPage(ctx *gin.Context) {
@@ -194,12 +192,12 @@ func returnMeetingsPage(ctx *gin.Context) {
 		return
 	}
 
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Meetings", "header": "minuteHeader", "id": []string{"serverMessage","meetings"}})
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Meetings", "header": "minuteHeader", "id": []string{"serverMessage", "meetings"}})
 }
 
 //messagesに含まれるものを jsonで返す
 func fetchMessage(ctx *gin.Context) {
-	m,_ := strconv.Atoi(ctx.Param("meetingID"))
+	m, _ := strconv.Atoi(ctx.Param("meetingID"))
 	meetingID := uint(m)
 
 	messagesInDB := MeetingMessageGetAll(meetingID)
@@ -230,7 +228,7 @@ func handleAddMessage(ctx *gin.Context) {
 	req := new(AddMessageRequest)
 	err := ctx.BindJSON(req)
 
-	m,_ := strconv.Atoi(ctx.Param("meetingID"))
+	m, _ := strconv.Atoi(ctx.Param("meetingID"))
 	meetingID := uint(m)
 
 	if err != nil {
@@ -465,93 +463,95 @@ func postLogout(ctx *gin.Context) {
 }
 
 //tfidfを元に重要度を計算し、重要と考えられる単語を返す
-func handleImportantWords(ctx *gin.Context){
-	m,_ := strconv.Atoi(ctx.Param("meetingID"))
+func handleImportantWords(ctx *gin.Context) {
+	m, _ := strconv.Atoi(ctx.Param("meetingID"))
 	meetingID := uint(m)
 
 	messagesInDB := MeetingMessageGetAll(meetingID)
 
 	messages := make([]string, len(messagesInDB))
 	for i, msg := range messagesInDB {
-		messages[i] = msg.Message;
+		messages[i] = msg.Message
 	}
 	allTfIdf := allTfIdf(messages)
 	bestTfIdf := map[string]float64{}
 
 	//複数文書に現れる単語のtfidfは最も大きい値を採用
-	for _, tfidfs := range allTfIdf{
-		for term := range tfidfs{
-			if _, ok := bestTfIdf[term]; ok{
-				if tfidfs[term] > bestTfIdf[term]{
+	for _, tfidfs := range allTfIdf {
+		for term := range tfidfs {
+			if _, ok := bestTfIdf[term]; ok {
+				if tfidfs[term] > bestTfIdf[term] {
 					bestTfIdf[term] = tfidfs[term]
 				}
-			}else{
+			} else {
 				bestTfIdf[term] = tfidfs[term]
 			}
 		}
 	}
 	//tfidfが大きい順にソート
 	sortedTfIdf := List{}
-	for k, v := range bestTfIdf{
+	for k, v := range bestTfIdf {
 		e := Items{k, v}
 		sortedTfIdf = append(sortedTfIdf, e)
 	}
 	sort.Sort(sortedTfIdf)
 	//上位10個(1０未満だったらその数だけ)を返す
 	n := 10
-	if n > len(sortedTfIdf){
+	if n > len(sortedTfIdf) {
 		n = len(sortedTfIdf)
 	}
 	result := make([]string, n)
-	for i, item := range sortedTfIdf{
-		if i == n{
+	for i, item := range sortedTfIdf {
+		if i == n {
 			break
 		}
 		result[i] = item.name
 	}
 	ctx.JSON(http.StatusOK, result)
 }
+
 //以下mapのvalueを基準としてソートするために必要なもの
 type Items struct {
-    name  string
-    value float64
+	name  string
+	value float64
 }
 type List []Items
 
 func (l List) Len() int {
-    return len(l)
+	return len(l)
 }
 
 func (l List) Swap(i, j int) {
-    l[i], l[j] = l[j], l[i]
+	l[i], l[j] = l[j], l[i]
 }
 
 func (l List) Less(i, j int) bool {
-    if l[i].value == l[j].value {
-        return (l[i].name < l[j].name)
-    } else {
-        return (l[i].value > l[j].value)
-    }
+	if l[i].value == l[j].value {
+		return (l[i].name < l[j].name)
+	} else {
+		return (l[i].value > l[j].value)
+	}
 }
+
 //ここまで
 
-func handleImportantSentences(ctx *gin.Context){
-	m,_ := strconv.Atoi(ctx.Param("meetingID"))
+func handleImportantSentences(ctx *gin.Context) {
+	m, _ := strconv.Atoi(ctx.Param("meetingID"))
 	meetingID := uint(m)
 
 	messagesInDB := MeetingMessageGetAll(meetingID)
 	messages := make([]string, len(messagesInDB))
 	for i, msg := range messagesInDB {
-		messages[i] = msg.Message;
+		messages[i] = msg.Message
 	}
 	ranking := getImportantSentence(messages)
 	n := 5
-	if n > len(messages){
+	if n > len(messages) {
 		n = len(messages)
 	}
 	result := make([]string, n)
-	for i, rank := range ranking{
-		if i == n{
+	for i, rank := range ranking {
+		if i == n {
 			break
 		}
 		result[i] = messages[rank]
@@ -565,7 +565,7 @@ func handleGetMeetings(ctx *gin.Context) {
 	ret := make([]ResponseMeeting, len(ms))
 	for i, meeting := range ms {
 		ret[i] = ResponseMeeting{
-			ID: meeting.ID,
+			ID:   meeting.ID,
 			Name: meeting.Name,
 		}
 	}

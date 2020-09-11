@@ -477,7 +477,6 @@ func Test_cntAddMeeting_not_logined_user(t *testing.T) {
 
 }
 
-
 //ログインせずに議事録ページにはいけない
 //リダイレクト
 func Test_redirect_minutesPage_not_logined(t *testing.T) {
@@ -614,7 +613,7 @@ func Test_cntGetMessage_notExistMinutes(t *testing.T) {
 
 	resp := httptest.NewRecorder()
 
-	req, _ := http.NewRequest("GET", DummyGetMessgaeRoute , nil)
+	req, _ := http.NewRequest("GET", DummyGetMessgaeRoute, nil)
 	req.Header.Set("Cookie", mainCookie)
 
 	router.ServeHTTP(resp, req)
@@ -1288,7 +1287,7 @@ func Test_cntGetUserInfo_not_logined_user(t *testing.T) {
 	//fmt.Println(resp.Header().Get("Set-Cookie"))
 	body, _ := ioutil.ReadAll(resp.Body)
 
-  assert.Equal(t, 400, resp.Code)
+	assert.Equal(t, 400, resp.Code)
 	assert.Contains(t, string(body), `"error":"Bad Request"`)
 
 }

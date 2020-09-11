@@ -1,4 +1,5 @@
 rm ./main
+go fmt
 mv -f ./minutes.sqlite3 ./temp
 go test -v *.go
 rm minutes.sqlite3

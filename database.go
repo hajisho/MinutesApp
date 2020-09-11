@@ -36,8 +36,8 @@ type User struct {
 
 type Meeting struct {
 	gorm.Model
-	Name string `gorm:"unique;not null"`
-	UserID    uint
+	Name   string `gorm:"unique;not null"`
+	UserID uint
 }
 
 type Entry struct {
@@ -76,15 +76,15 @@ func dbInit() {
 
 //DB追加
 //ミーティングIDを指定するように変更
-func messageInsert(message string, meetingID uint,userID uint) {
+func messageInsert(message string, meetingID uint, userID uint) {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
 		panic("データベース開ません(dbInsert)")
 	}
 	db.Create(&Message{
-		Message: message,
-		MeetingID:  meetingID,
-		UserID:  userID,
+		Message:   message,
+		MeetingID: meetingID,
+		UserID:    userID,
 	})
 	defer db.Close()
 }
@@ -217,12 +217,12 @@ func getMeetingByID(meetingID uint) Meeting {
 }
 
 //議事録追加
-func createMeeting(meeting string, userID uint) error{
+func createMeeting(meeting string, userID uint) error {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
 		panic("データベース開ません(dbInsert)")
 	}
-	if err := db.Create(&Meeting{ Name: meeting, UserID:  userID}).Error; err != nil {
+	if err := db.Create(&Meeting{Name: meeting, UserID: userID}).Error; err != nil {
 		return err
 	}
 
