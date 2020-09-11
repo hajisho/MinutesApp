@@ -42,15 +42,21 @@ var PostMeetingRoute string = "/meetings"
 
 var GetMinutesPageRoute string = "/meetings/1"
 var DummyMinutesPageRoute string = "/meetings/1234"
+
 var EntranceRoute string = "/entrance"
 var GetUserInfo string = "/user"
+
 var GetMessageRoute string = GetMinutesPageRoute + "/message"
+var DummyGetMessgaeRoute string = DummyMinutesPageRoute + "/message"
 var PostMessageRoute string = GetMinutesPageRoute + "/add_message"
+var DummyPostMessgaeRoute string = DummyMinutesPageRoute + "/add_message"
 var UpdateMessageRoute string = "/update_message"
 var DeleteMessageRoute string = "/delete_message"
+
 var LoginRoute string = "/login"
 var RegisterRoute string = "/register"
 var LogoutRoute string = "/logout"
+
 var GetImportantWordsRoute string = GetMinutesPageRoute + "/important_words"
 var GetImportantSentencesRoute string = GetMinutesPageRoute + "/important_sentences"
 
@@ -390,7 +396,10 @@ func Test_cntGetMeeting_not_logined_user(t *testing.T) {
 
 	router.ServeHTTP(resp, req)
 
-	assert.Equal(t, 303, resp.Code)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"Bad Request`)
 }
 
 //登録済みのユーザーは議事録を作成可能
@@ -461,10 +470,10 @@ func Test_cntAddMeeting_not_logined_user(t *testing.T) {
 
 	router.ServeHTTP(resp, req)
 	//fmt.Println(resp.Header().Get("Set-Cookie"))
-	//body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 303, resp.Code)
-	//assert.Contains(t, string(body), `error":"Bad Request`)
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"Bad Request`)
 
 }
 
@@ -478,7 +487,10 @@ func Test_redirect_minutesPage_not_logined(t *testing.T) {
 	req, _ := http.NewRequest("GET", GetMinutesPageRoute, nil)
 	router.ServeHTTP(resp, req)
 
-	assert.Equal(t, 303, resp.Code)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"Bad Request`)
 }
 
 //登録されていないユーザー情報を持ったsessionではアクセスできない
@@ -525,7 +537,10 @@ func Test_cntAccess_minutesPage_notExist(t *testing.T) {
 
 	router.ServeHTTP(resp, req)
 
+	body, _ := ioutil.ReadAll(resp.Body)
+
 	assert.Equal(t, 404, resp.Code)
+	assert.Contains(t, string(body), `error":"Not Found`)
 }
 
 //ログアウト後に議事録ページにいけない
@@ -559,12 +574,10 @@ func Test_cntGetMessge_not_logined_user(t *testing.T) {
 	req, _ := http.NewRequest("GET", GetMessageRoute, nil)
 
 	router.ServeHTTP(resp, req)
+	body, _ := ioutil.ReadAll(resp.Body)
 
-	router.ServeHTTP(resp, req)
-	//body, _ := ioutil.ReadAll(resp.Body)
-
-	assert.Equal(t, 303, resp.Code)
-	//assert.Contains(t, string(body), `error":"Bad Request`)
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"Bad Request`)
 
 }
 
@@ -594,6 +607,42 @@ func Test_canLogin_registered_user_useDifferentSessionInfo(t *testing.T) {
 	mainCookie = resp.Header().Get("Set-Cookie")
 	//ちょうど mysession = valueの部分が取り出せる
 	assert.NotEqual(t, strings.Split(mainCookie, " ")[0], strings.Split(oldCookie, " ")[0])
+}
+
+//存在しない議事録のメッセージは取得できない
+func Test_cntGetMessage_notExistMinutes(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", DummyGetMessgaeRoute , nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 404, resp.Code)
+	assert.Contains(t, string(body), `error":"Not Found`)
+}
+
+//存在しない議事録へはメッセージを送信できない
+func Test_cntPostMessage_notExistMinutes(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	jsonStr := `{"message":"カシスオレンジ"}`
+	req, _ := http.NewRequest(
+		"POST",
+		DummyPostMessgaeRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 404, resp.Code)
+	assert.Contains(t, string(body), `error":"Not Found`)
 }
 
 //登録済みのユーザーはメッセージを送信可能
@@ -642,10 +691,10 @@ func Test_cntAddMessge_not_logined_user(t *testing.T) {
 
 	router.ServeHTTP(resp, req)
 	//fmt.Println(resp.Header().Get("Set-Cookie"))
-	//body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 303, resp.Code)
-	//assert.Contains(t, string(body), `error":"Bad Request`)
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"Bad Request`)
 
 }
 
@@ -731,10 +780,10 @@ func Test_cntUpdateMessge_not_logined_user(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 
 	router.ServeHTTP(resp, req)
-	//body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 303, resp.Code)
-	//assert.Contains(t, string(body), `"error":"Bad Request"`)
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `"error":"Bad Request"`)
 
 }
 
@@ -821,10 +870,10 @@ func Test_cntDeleteMessge_not_logined_user(t *testing.T) {
 
 	router.ServeHTTP(resp, req)
 	//fmt.Println(resp.Header().Get("Set-Cookie"))
-	//body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 303, resp.Code)
-	//assert.Contains(t, string(body), `"error":"Bad Request"`)
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `"error":"Bad Request"`)
 
 }
 
@@ -907,8 +956,8 @@ func Test_cntGetImportantWords_not_logined_user(t *testing.T) {
 	router.ServeHTTP(resp, req)
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 303, resp.Code)
-	//assert.Contains(t, string(body), `"error":"Bad Request"`)
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `"error":"Bad Request"`)
 	//念のため、後のテストのために"寿司が食べたい。"は消しておく
 	resp = httptest.NewRecorder()
 
@@ -1060,8 +1109,8 @@ func Test_cntGetImportantSentences_not_logined_user(t *testing.T) {
 	router.ServeHTTP(resp, req)
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 303, resp.Code)
-	//assert.Contains(t, string(body), `"error":"Bad Request"`)
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `"error":"Bad Request"`)
 	//念のため、後のテストのために前に入力した文章は消しておく
 	resp = httptest.NewRecorder()
 
@@ -1237,10 +1286,10 @@ func Test_cntGetUserInfo_not_logined_user(t *testing.T) {
 
 	router.ServeHTTP(resp, req)
 	//fmt.Println(resp.Header().Get("Set-Cookie"))
-	//body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 303, resp.Code)
-	//assert.Contains(t, string(body), `"error":"Bad Request"`)
+  assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `"error":"Bad Request"`)
 
 }
 
@@ -1383,10 +1432,10 @@ func Test_middeleware_logedIn_not_logined_user(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 
 	router.ServeHTTP(resp, req)
-	//body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 
-	assert.Equal(t, 303, resp.Code)
-	//assert.Contains(t, string(body), `error":"Bad Request`)
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"Bad Request`)
 
 }
 

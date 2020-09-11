@@ -100,7 +100,7 @@ func meetingExistCheck() gin.HandlerFunc {
 		meeting := getMeetingByID(meetingID)
 
 		if(meeting.ID == 0){
-			ctx.JSON(http.StatusNotFound, gin.H{"message": "Not Found"})
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
 			ctx.Abort()
 			return
 		}
