@@ -9,7 +9,7 @@ import (
 
 	//ginのインポート
 	"github.com/gin-gonic/gin"
-
+  "fmt"
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
@@ -159,6 +159,10 @@ func returnMeetingsPage(ctx *gin.Context) {
 
 	session := sessions.Default(ctx)
 	user := session.Get("SessionID")
+
+	fmt.Println(session)
+	fmt.Println(user)
+
 	if user == nil {
 		ctx.Redirect(http.StatusSeeOther, "/entrance")
 		ctx.Abort()
