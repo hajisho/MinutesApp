@@ -75,7 +75,7 @@ func dbInit() {
 }
 
 //DB追加
-//追加したいメッセージは、dbInsert(message.Message, userID)のような感じで呼べば追加される
+//ミーティングIDを指定するように変更
 func messageInsert(message string, meetingID uint,userID uint) {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
@@ -89,8 +89,7 @@ func messageInsert(message string, meetingID uint,userID uint) {
 	defer db.Close()
 }
 
-//DB全取得
-//dbGetAll()と呼ぶことで、データベース内の全てのMessageオブジェクトが返される
+//指定されたミーティングIDを持つメッセージを全取得
 func MeetingMessageGetAll(meetingID uint) []Message {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
@@ -193,6 +192,7 @@ func comparePassword(dbPassword string, formPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(formPassword))
 }
 
+//議事録一覧を取得
 func getAllMeeting() []Meeting {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
@@ -204,6 +204,7 @@ func getAllMeeting() []Meeting {
 	return meeting
 }
 
+//主に議事録名の取得に用いる
 func getMeetingByID(meetingID uint) Meeting {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
@@ -215,7 +216,7 @@ func getMeetingByID(meetingID uint) Meeting {
 	return meeting
 }
 
-//meeting追加
+//議事録追加
 func createMeeting(meeting string, userID uint) error{
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {

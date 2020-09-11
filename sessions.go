@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"net/http"
 	"time"
-	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
@@ -157,9 +156,6 @@ func sessionCheck() gin.HandlerFunc {
 
 		session := sessions.Default(ctx)
 		sessionID := session.Get("SessionID")
-
-    fmt.Println(session)
-		fmt.Println(sessionID)
 
 		// セッションがない場合
 		if sessionID == nil {

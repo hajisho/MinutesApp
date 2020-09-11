@@ -9,7 +9,6 @@ import (
 
 	//ginのインポート
 	"github.com/gin-gonic/gin"
-  "fmt"
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
@@ -57,8 +56,11 @@ func setupRouter() *gin.Engine {
 		// ミーティングの追加
 		logedIn.POST("/meetings", handlePostMeetings)
 
+		//meetingIDで指定されたIDを持つ議事録があるかを調べるミドルウェア
+		// :~　とするとこで gin.contextから呼び出せる
 		mtgIn := logedIn.Group("/meetings/:meetingID", meetingExistCheck())
 		{
+			//議事録一覧ページを返す
 			mtgIn.GET(".", returnMinutesPage)
 			// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
 			mtgIn.GET("/message", fetchMessage)
@@ -92,31 +94,6 @@ func main() {
 	router.Run(":10000")
 }
 
-func meetingExistCheck() gin.HandlerFunc {
-	return func(ctx *gin.Context){
-		m,_ := strconv.Atoi(ctx.Param("meetingID"))
-		meetingID := uint(m)
-
-		meeting := getMeetingByID(meetingID)
-
-		if(meeting.ID == 0){
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
-			ctx.Abort()
-			return
-		}
-		return
-	}
-}
-
-func returnMinutesPage(ctx *gin.Context) {
-
-	m,_ := strconv.Atoi(ctx.Param("meetingID"))
-	meetingID := uint(m)
-
-	meeting := getMeetingByID(meetingID)
-
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": meeting.Name, "header": "minuteHeader", "id": []string{"message"}})
-}
 
 // ResponseUserPublic は、公開ユーザー情報がクライアントへ返される時の形式です。
 // JSON形式へマーシャルできます。
@@ -139,6 +116,35 @@ type ResponseMeeting struct {
 	Name string `json:"name"`
 }
 
+//URLで指定されたIDを持つ議事録があるかを調べるミドルウェア
+func meetingExistCheck() gin.HandlerFunc {
+	return func(ctx *gin.Context){
+		m,_ := strconv.Atoi(ctx.Param("meetingID"))
+		meetingID := uint(m)
+
+		meeting := getMeetingByID(meetingID)
+
+		if(meeting.ID == 0){
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
+			ctx.Abort()
+			return
+		}
+		return
+	}
+}
+
+//議事録本体ページ
+func returnMinutesPage(ctx *gin.Context) {
+
+	m,_ := strconv.Atoi(ctx.Param("meetingID"))
+	meetingID := uint(m)
+
+	meeting := getMeetingByID(meetingID)
+
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": meeting.Name, "header": "minuteHeader", "id": []string{"message"}})
+}
+
+
 //ログインページのhtmlを返す
 func returnLoginPage(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Login and Register", "header": "loginHeader", "id": []string{"LoginAndRegister", "serverMessage"}})
@@ -153,15 +159,12 @@ func returnEntrancePage(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Entrance", "header": "entranceHeader", "id": []string{"entrance", "serverMessage"}})
 }
 
+//議事録一覧ページ
+//セッションのエラーが多いページなので、エラーは全てリダイレクトにしている
 func returnMeetingsPage(ctx *gin.Context) {
-	//Cookieがなければログインページにリダイレクト　のつもり
-	// 下記の関数、sessionCeckで確認しているから、実際には必要ないはず。要らなければ削除
 
 	session := sessions.Default(ctx)
 	user := session.Get("SessionID")
-
-	fmt.Println(session)
-	fmt.Println(user)
 
 	if user == nil {
 		ctx.Redirect(http.StatusSeeOther, "/entrance")
@@ -556,6 +559,7 @@ func handleImportantSentences(ctx *gin.Context){
 	ctx.JSON(http.StatusOK, result)
 }
 
+//議事録一覧を取得
 func handleGetMeetings(ctx *gin.Context) {
 	ms := getAllMeeting()
 	ret := make([]ResponseMeeting, len(ms))
@@ -568,10 +572,12 @@ func handleGetMeetings(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ret)
 }
 
+//議事録追加の際にクライアントから送られるフォーマット
 type AddMeetingRequest struct {
 	Meeting string `json:"meeting"`
 }
 
+//議事録を追加
 func handlePostMeetings(ctx *gin.Context) {
 	// POST bodyからメッセージを獲得
 	req := new(AddMeetingRequest)
