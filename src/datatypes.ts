@@ -11,4 +11,5 @@ export type Message = {
 
 export type Meeting = {
   name: string;
+  id: number;
 };

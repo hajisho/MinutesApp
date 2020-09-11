@@ -35,18 +35,30 @@ var dummyCookie string = `mysession=MTU5ODg0Mjg4NXxEdi1CQkFFQ180SUFBUkFCRUFBQU1f
 //サーバーのルーティング
 var router = setupRouter()
 
-var GetMinutesPageRoute string = "/"
+//テストのためのmeetingインスタンス
+var GetSelectMeetingPageRoute string = "/"
+var GetMeetingRoute string = "/meetings"
+var PostMeetingRoute string = "/meetings"
+
+var GetMinutesPageRoute string = "/meetings/1"
+var DummyMinutesPageRoute string = "/meetings/1234"
+
 var EntranceRoute string = "/entrance"
 var GetUserInfo string = "/user"
-var GetMessageRoute string = "/message"
-var PostMessageRoute string = "/add_message"
+
+var GetMessageRoute string = GetMinutesPageRoute + "/message"
+var DummyGetMessgaeRoute string = DummyMinutesPageRoute + "/message"
+var PostMessageRoute string = GetMinutesPageRoute + "/add_message"
+var DummyPostMessgaeRoute string = DummyMinutesPageRoute + "/add_message"
 var UpdateMessageRoute string = "/update_message"
 var DeleteMessageRoute string = "/delete_message"
+
 var LoginRoute string = "/login"
 var RegisterRoute string = "/register"
 var LogoutRoute string = "/logout"
-var GetImportantWordsRoute string = "/important_words"
-var GetImportantSentencesRoute string = "/important_sentences"
+
+var GetImportantWordsRoute string = GetMinutesPageRoute + "/important_words"
+var GetImportantSentencesRoute string = GetMinutesPageRoute + "/important_sentences"
 
 //エントランスページはセッション情報がなくても取得できる
 func Test_entrancePage(t *testing.T) {
@@ -328,6 +340,143 @@ func Test_cntLogin_not_registered_user(t *testing.T) {
 	assert.Contains(t, string(body), `error":"user not exist`)
 }
 
+//ログインせずに議事録一覧ページにはいけない
+//リダイレクト
+func Test_redirect_meetingPage_not_logined(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", GetSelectMeetingPageRoute, nil)
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, 303, resp.Code)
+}
+
+//登録されていないユーザー情報を持ったsessionでは議事録一覧ページにアクセスできない
+func Test_cntAccess_meetingPage_dummySession(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", GetSelectMeetingPageRoute, nil)
+	req.Header.Set("Cookie", dummyCookie)
+
+	router.ServeHTTP(resp, req)
+
+	//body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 303, resp.Code)
+	//順序注意　assert.Contains 第二引数に第三引数の要素が含まれているか
+	//assert.Contains(t, string(body), "Invalid session ID")
+}
+
+//ログインしたなら議事録一覧ページに行ける
+func Test_canAccess_meetingPage_logined(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", GetSelectMeetingPageRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	//順序注意　assert.Contains 第二引数に第三引数の要素が含まれているか
+	assert.Contains(t, string(body), "<title>Meetings</title>")
+}
+
+//登録していないユーザーは議事録一覧を取得不可
+func Test_cntGetMeeting_not_logined_user(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", GetMeetingRoute, nil)
+
+	router.ServeHTTP(resp, req)
+
+	router.ServeHTTP(resp, req)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"Bad Request`)
+}
+
+//登録済みのユーザーは議事録を作成可能
+func Test_canAddMeeting_logined_user(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	jsonStr := `{"meeting":"議事録テスト"}`
+	req, _ := http.NewRequest(
+		"POST",
+		PostMeetingRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), "success")
+
+	req, _ = http.NewRequest("GET", GetMeetingRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ = ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 200, resp.Code)
+	assert.Contains(t, string(body), `[{"id":1,"name":"議事録テスト"}]`)
+}
+
+//同名の議事録は作成不可
+func Test_cntAddMeeting_sameName(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	jsonStr := `{"meeting":"議事録テスト"}`
+	req, _ := http.NewRequest(
+		"POST",
+		PostMeetingRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"already use this name`)
+}
+
+//登録していないユーザーは議事録を作成不可
+func Test_cntAddMeeting_not_logined_user(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	jsonStr := `{"meeting":"議事録ダミー"}`
+	req, _ := http.NewRequest(
+		"POST",
+		PostMeetingRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	//fmt.Println(resp.Header().Get("Set-Cookie"))
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"Bad Request`)
+
+}
+
 //ログインせずに議事録ページにはいけない
 //リダイレクト
 func Test_redirect_minutesPage_not_logined(t *testing.T) {
@@ -337,7 +486,10 @@ func Test_redirect_minutesPage_not_logined(t *testing.T) {
 	req, _ := http.NewRequest("GET", GetMinutesPageRoute, nil)
 	router.ServeHTTP(resp, req)
 
-	assert.Equal(t, 303, resp.Code)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 400, resp.Code)
+	assert.Contains(t, string(body), `error":"Bad Request`)
 }
 
 //登録されていないユーザー情報を持ったsessionではアクセスできない
@@ -371,7 +523,23 @@ func Test_canAccess_minutesPage_logined(t *testing.T) {
 
 	assert.Equal(t, 200, resp.Code)
 	//順序注意　assert.Contains 第二引数に第三引数の要素が含まれているか
-	assert.Contains(t, string(body), "<title>議事録</title>")
+	assert.Contains(t, string(body), "<title>議事録テスト</title>")
+}
+
+//存在しない議事録ページにはいけない
+func Test_cntAccess_minutesPage_notExist(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", DummyMinutesPageRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 404, resp.Code)
+	assert.Contains(t, string(body), `error":"Not Found`)
 }
 
 //ログアウト後に議事録ページにいけない
@@ -403,8 +571,6 @@ func Test_cntGetMessge_not_logined_user(t *testing.T) {
 
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", GetMessageRoute, nil)
-
-	router.ServeHTTP(resp, req)
 
 	router.ServeHTTP(resp, req)
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -440,6 +606,42 @@ func Test_canLogin_registered_user_useDifferentSessionInfo(t *testing.T) {
 	mainCookie = resp.Header().Get("Set-Cookie")
 	//ちょうど mysession = valueの部分が取り出せる
 	assert.NotEqual(t, strings.Split(mainCookie, " ")[0], strings.Split(oldCookie, " ")[0])
+}
+
+//存在しない議事録のメッセージは取得できない
+func Test_cntGetMessage_notExistMinutes(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", DummyGetMessgaeRoute, nil)
+	req.Header.Set("Cookie", mainCookie)
+
+	router.ServeHTTP(resp, req)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 404, resp.Code)
+	assert.Contains(t, string(body), `error":"Not Found`)
+}
+
+//存在しない議事録へはメッセージを送信できない
+func Test_cntPostMessage_notExistMinutes(t *testing.T) {
+
+	resp := httptest.NewRecorder()
+
+	jsonStr := `{"message":"カシスオレンジ"}`
+	req, _ := http.NewRequest(
+		"POST",
+		DummyPostMessgaeRoute,
+		bytes.NewBuffer([]byte(jsonStr)),
+	)
+	req.Header.Set("Cookie", mainCookie)
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(resp, req)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	assert.Equal(t, 404, resp.Code)
+	assert.Contains(t, string(body), `error":"Not Found`)
 }
 
 //登録済みのユーザーはメッセージを送信可能

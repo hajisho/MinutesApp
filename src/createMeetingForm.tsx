@@ -1,28 +1,30 @@
+// https://material-ui.com/components/dialogs/#dialog
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
-import EditIcon from '@material-ui/icons/Edit';
-import IconButton from '@material-ui/core/IconButton';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
+import Alert from '@material-ui/lab/Alert';
 
-// メッセージ更新のAPIへのURL
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const API_URL_UPDATE_MESSAGE = '/update_message';
+const API_URL_CREATE_MEETING = '/meetings';
 
-export default function EditMessagePostForm(props) {
-  const { onSubmitSuccessful, prevMessage, id, isHidden } = props;
+export default function CreateMeetingForm(props) {
+  const [open, setOpen] = React.useState(false);
 
-  const [message, setMessage] = React.useState<string>(prevMessage);
+  const { onSubmitSuccessful } = props;
 
-  const [open, setOpen] = React.useState<boolean>(false);
+  const [meeting, setMeeting] = React.useState<string>();
+
   // サーバがへメッセージ追加のリクエストを処理中ならtrue、でないならfalseの状態
   const [working, setWorking] = useState<boolean>(false);
 
-  const handleUpdate = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     // FIXME もしかしたら、非同期なため、これが効く前にボタンをクリックできるかもしれない
     setWorking(true);
     try {
@@ -30,7 +32,7 @@ export default function EditMessagePostForm(props) {
       event.preventDefault();
 
       // Reactのハンドラはasyncにできる
-      const res = await fetch(API_URL_UPDATE_MESSAGE, {
+      const res = await fetch(API_URL_CREATE_MEETING, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,24 +40,31 @@ export default function EditMessagePostForm(props) {
         // 相応しくないかも
         // same-originを使うべき？
         credentials: 'include',
-        body: JSON.stringify({ id, message }),
+        body: JSON.stringify({ meeting }),
       });
       const obj = await res.json();
-      if ('error' in obj) {
-        // サーバーからエラーが返却された
-        throw new Error(
-          `An error occurred on querying ${API_URL_UPDATE_MESSAGE}, the response included error message: ${obj.error}`
+
+      // 厳密だとundefinedでtrue?
+      if (obj.error != null) {
+        ReactDOM.render(
+          <div>
+            <Alert
+              variant="outlined"
+              severity="error"
+              onClose={() => {
+                ReactDOM.render(
+                  <div />,
+                  document.getElementById('serverMessage')
+                );
+              }}
+            >
+              {obj.error}
+            </Alert>
+          </div>,
+          document.getElementById('serverMessage')
         );
-      }
-      if (!('success' in obj)) {
-        // サーバーからsuccessメンバが含まれたJSONが帰るはずだが、見当たらなかった
         throw new Error(
-          `An response from ${API_URL_UPDATE_MESSAGE} unexpectedly did not have 'success' member`
-        );
-      }
-      if (obj.success !== true) {
-        throw new Error(
-          `An response from ${API_URL_UPDATE_MESSAGE} returned non true value as 'success' member`
+          `An response from ${API_URL_CREATE_MEETING} returned error`
         );
       }
       // 要求は成功
@@ -63,7 +72,7 @@ export default function EditMessagePostForm(props) {
       onSubmitSuccessful();
     } finally {
       setWorking(false);
-      setMessage('');
+      setMeeting('');
       setOpen(false);
     }
   };
@@ -76,65 +85,55 @@ export default function EditMessagePostForm(props) {
     setOpen(false);
   };
 
-  if (isHidden) {
-    return null;
-  }
   return (
-    <span>
-      <IconButton
-        edge="end"
-        aria-label="edit"
-        onClick={handleClickOpen}
-        data-num="100"
+    <div>
+      <Button
+        variant="outlined"
+        color="primary"
         disabled={working}
+        onClick={handleClickOpen}
       >
-        <EditIcon fontSize="small" />
-      </IconButton>
+        議事録の作成
+      </Button>
       <Dialog
         open={open}
         onClose={handleClose}
         aria-labelledby="form-dialog-title"
-        fullWidth
       >
-        <DialogTitle id="form-dialog-title">編集</DialogTitle>
+        <DialogTitle id="form-dialog-title">議事録作成</DialogTitle>
         <DialogContent>
+          <DialogContentText>
+            議事録の名前を設定してください。 注:同名の議事録は作成できません。
+          </DialogContentText>
           <TextField
             autoFocus
             margin="dense"
             id="name"
+            label="minutes name"
             type="text"
             fullWidth
-            multiline
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
+            value={meeting}
+            onChange={(event) => setMeeting(event.target.value)}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} color="primary">
-            キャンセル
+            Cancel
           </Button>
-          <Button onClick={handleUpdate} color="primary">
-            完了
+          <Button onClick={handleSubmit} color="primary">
+            作成
           </Button>
         </DialogActions>
       </Dialog>
-    </span>
+    </div>
   );
 }
 
-EditMessagePostForm.propTypes = {
+CreateMeetingForm.propTypes = {
   // メッセージの更新が正常に完了したら呼ばれる関数
   onSubmitSuccessful: PropTypes.func,
-  prevMessage: PropTypes.string,
-  id: PropTypes.string,
-  isHidden: PropTypes.bool,
 };
 
-EditMessagePostForm.defaultProps = {
-  onSubmitSuccessful: () => {
-    window.location.href = window.location.pathname;
-  },
-  prevMessage: '',
-  id: '',
-  isHidden: true,
+CreateMeetingForm.defaultProps = {
+  onSubmitSuccessful: () => {},
 };

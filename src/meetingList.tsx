@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles, Card, CardContent, CardHeader } from '@material-ui/core';
+import CardActions from '@material-ui/core/CardActions';
+import Button from '@material-ui/core/Button';
 // eslint-disable-next-line no-unused-vars
 import { Meeting } from './datatypes';
+import CreateMeetingForm from './createMeetingForm';
 
 const useStylesCard = makeStyles({
   root: {
@@ -21,7 +24,7 @@ function MeetingList({ forceUpdate }) {
   const [data, setData] = useState<Meeting[]>([]);
 
   useEffect(() => {
-    fetch('/api_meetings')
+    fetch('/meetings')
       .then((res) => res.json())
       .then(setData);
   }, [forceUpdate]);
@@ -35,6 +38,11 @@ function MeetingList({ forceUpdate }) {
             {/* <Typography variant="body2" component="p">
             </Typography> */}
           </CardContent>
+          <CardActions>
+            <Button size="small" color="primary" href={`/meetings/${m.id}`}>
+              join
+            </Button>
+          </CardActions>
           {/* <CardActions>
             <EditMessagePostForm
               prevMessage={item.message}
@@ -60,14 +68,15 @@ MeetingList.defaultProps = {
 };
 
 export default function Meetings() {
-  const [randomValue] = useState<number>(Math.random());
+  const [randomValue, setRandomValue] = useState<number>(Math.random());
 
-  // const onMeetingAdded = () => {
-  //   setRandomValue(Math.random());
-  // };
+  const onMeetingAdded = () => {
+    setRandomValue(Math.random());
+  };
 
   return (
     <>
+      <CreateMeetingForm onSubmitSuccessful={onMeetingAdded} />
       <MeetingList forceUpdate={randomValue} />
     </>
   );

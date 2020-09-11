@@ -1,21 +1,22 @@
 package main
+
 //引用先：https://github.com/ramenjuniti/jtfidf/blob/master/jtfidf.go#L77
 import (
-  "math"
-  "github.com/ikawaha/kagome/tokenizer"
+	"github.com/ikawaha/kagome/tokenizer"
+	"math"
 )
 
-func splitTerm(d string) []string{
-  t := tokenizer.New()
-  tokens := t.Tokenize(d)
-  tokens = tokens[1: len(tokens)-1]
-  terms := make([]string, len(tokens))
+func splitTerm(d string) []string {
+	t := tokenizer.New()
+	tokens := t.Tokenize(d)
+	tokens = tokens[1 : len(tokens)-1]
+	terms := make([]string, len(tokens))
 
-  for i, token := range tokens{
-    terms[i] = token.Surface
-  }
+	for i, token := range tokens {
+		terms[i] = token.Surface
+	}
 
-  return terms
+	return terms
 }
 
 // AllTf returns all TF values in d
@@ -139,26 +140,26 @@ func Tfidf(t, d string, ds []string) float64 {
 	return Tf(t, d) * (Idf(t, ds) + 1)
 }
 
-func allTfIdfVec(ds []string) [][]float64{
-  tfidfs := allTfIdf(ds)
-  idfs := AllIdf(ds)
-  vocab := make([]string, len(idfs))
-  index := 0
-  for term, _ := range idfs{
-    vocab[index] = term
-    index++
-  }
-  tfidfVec := make([][]float64, len(ds))
-  for i, tfidf := range tfidfs{
-    vec := make([]float64, len(vocab))
-    for _, term := range vocab{
-      if _, ok := tfidf[term]; ok{
-        vec = append(vec, tfidf[term])
-      } else{
-        vec = append(vec, 0)
-      }
-    }
-    tfidfVec[i] = vec
-  }
-  return tfidfVec
+func allTfIdfVec(ds []string) [][]float64 {
+	tfidfs := allTfIdf(ds)
+	idfs := AllIdf(ds)
+	vocab := make([]string, len(idfs))
+	index := 0
+	for term, _ := range idfs {
+		vocab[index] = term
+		index++
+	}
+	tfidfVec := make([][]float64, len(ds))
+	for i, tfidf := range tfidfs {
+		vec := make([]float64, len(vocab))
+		for _, term := range vocab {
+			if _, ok := tfidf[term]; ok {
+				vec = append(vec, tfidf[term])
+			} else {
+				vec = append(vec, 0)
+			}
+		}
+		tfidfVec[i] = vec
+	}
+	return tfidfVec
 }

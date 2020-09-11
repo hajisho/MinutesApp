@@ -5,12 +5,13 @@ import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
-import MenuIcon from '@material-ui/icons/Menu';
+// import MenuIcon from '@material-ui/icons/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import Menu from '@material-ui/core/Menu';
 import AccountCircle from '@material-ui/icons/AccountCircle';
+import Button from '@material-ui/core/Button';
 import MessageList from './messageList';
-import MeetingList from './meetingList';
+import Meeting from './meetingList';
 
 const useStylesBar = makeStyles((theme) => ({
   header: {
@@ -63,6 +64,7 @@ function MinuteAppBar() {
     <div className={classes.header}>
       <AppBar position="static">
         <Toolbar>
+          {/*
           <IconButton
             edge="start"
             className={classes.menuButton}
@@ -71,6 +73,15 @@ function MinuteAppBar() {
           >
             <MenuIcon />
           </IconButton>
+          */}
+          <Button
+            variant="contained"
+            onClick={() => {
+              window.location.href = '/';
+            }}
+          >
+            HOME
+          </Button>
           <Typography variant="h6" className={classes.title}>
             Minutes Application
           </Typography>
@@ -96,8 +107,9 @@ function MinuteAppBar() {
 if (document.getElementById('message') != null) {
   ReactDOM.render(<MessageList />, document.getElementById('message'));
 }
+
 if (document.getElementById('meetings') != null) {
-  ReactDOM.render(<MeetingList />, document.getElementById('meetings'));
+  ReactDOM.render(<Meeting />, document.getElementById('meetings'));
 }
 if (document.getElementById('minuteHeader') != null) {
   ReactDOM.render(<MinuteAppBar />, document.getElementById('minuteHeader'));

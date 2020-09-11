@@ -6,7 +6,7 @@ import Alert from '@material-ui/lab/Alert';
 import KeyboardVoiceIcon from '@material-ui/icons/KeyboardVoice';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 
-const apiUrlAddMessage = '/add_message';
+const apiUrlAddMessage = `${window.location.pathname}/add_message`;
 
 const useStyles = makeStyles((theme) =>
   createStyles({
@@ -110,7 +110,8 @@ export default function AudioMessagePostForm(props) {
         className={classes.button}
         onClick={() => {
           setAction('Start');
-          window.location.href = '/';
+          window.location.href = window.location.pathname;
+          // props.onSubmitSuccessful();
         }}
       >
         Stop
