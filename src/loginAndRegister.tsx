@@ -8,6 +8,7 @@ import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 import ReactDOM from 'react-dom';
 import Toolbar from '@material-ui/core/Toolbar';
+import Button from '@material-ui/core/Button';
 import LoginPostForm from './loginForm';
 import RigsterPostForm from './registerForm';
 
@@ -48,6 +49,9 @@ const useStyles = makeStyles((theme) => ({
     marginRight: theme.spacing(2),
   },
   title: {
+    flexGrow: 1,
+  },
+  grow: {
     flexGrow: 1,
   },
 }));
@@ -111,9 +115,16 @@ function LoginAppBar() {
     <div className={classes.header}>
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" className={classes.title}>
-            Minutes Application
-          </Typography>
+          <Button
+            color="inherit"
+            onClick={() => {
+              window.location.href = '/';
+            }}
+          >
+            <Typography variant="h6" className={classes.title}>
+              Minutes Application
+            </Typography>
+          </Button>
         </Toolbar>
       </AppBar>
     </div>

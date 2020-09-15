@@ -16,6 +16,9 @@ const useStyles = makeStyles((theme) => ({
   title: {
     flexGrow: 1,
   },
+  grow: {
+    flexGrow: 1,
+  },
 }));
 
 function EntranceSection() {
@@ -37,9 +40,17 @@ function EntranceAppBar() {
     <div className={classes.header}>
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" className={classes.title}>
-            Minutes Application
-          </Typography>
+          <Button
+            color="inherit"
+            onClick={() => {
+              window.location.href = '/';
+            }}
+          >
+            <Typography variant="h6" className={classes.title}>
+              Minutes Application
+            </Typography>
+          </Button>
+          <div className={classes.grow} />
           <Button color="inherit" onClick={toLogin}>
             Login
           </Button>

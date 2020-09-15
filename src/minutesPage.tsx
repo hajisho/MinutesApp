@@ -22,6 +22,9 @@ const useStylesBar = makeStyles((theme) => ({
   title: {
     flexGrow: 1,
   },
+  grow: {
+    flexGrow: 1,
+  },
 }));
 
 function MinuteAppBar() {
@@ -64,16 +67,16 @@ function MinuteAppBar() {
       <AppBar position="static">
         <Toolbar>
           <Button
-            variant="contained"
+            color="inherit"
             onClick={() => {
               window.location.href = '/';
             }}
           >
-            HOME
+            <Typography variant="h6" className={classes.title}>
+              Minutes Application
+            </Typography>
           </Button>
-          <Typography variant="h6" className={classes.title}>
-            Minutes Application
-          </Typography>
+          <div className={classes.grow} />
           <IconButton
             edge="end"
             aria-label="account of current user"
