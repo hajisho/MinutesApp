@@ -16,3 +16,9 @@ p {
 .analysis1{
 	display: flex;
 }
+
+.meetingList{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+}

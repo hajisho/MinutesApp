@@ -13,6 +13,12 @@ const useStylesCard = makeStyles({
     maxWidth: 275,
     marginTop: 15,
     marginBottom: 15,
+    marginLeft: 5,
+    marginRight: 5,
+  },
+  header: {
+    minHeight: 100,
+    maxHeight: 100,
   },
   title: {
     fontSize: 14,
@@ -30,11 +36,11 @@ function MeetingList({ forceUpdate }) {
   }, [forceUpdate]);
 
   return (
-    <div>
+    <div className="meetingList">
       {data.map((m) => (
         <Card className={classes.root} key={m.name}>
           <CardContent>
-            <CardHeader title={m.name} />
+            <CardHeader title={m.name} className={classes.header} />
             {/* <Typography variant="body2" component="p">
             </Typography> */}
           </CardContent>
