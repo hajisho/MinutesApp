@@ -16,6 +16,7 @@ import SwipeableViews from 'react-swipeable-views';
 import { Message, User } from './datatypes';
 import EditMessagePostForm from './editForm';
 import DeleteMessageDialog from './deleteDialog';
+import DownloadMessageDialog from './downloadDialog';
 import AudioMessagePostForm from './audioMessageForm';
 import MessagePostForm from './messageForm';
 import DataAnalysisPage from './dataAnalysisPage';
@@ -93,6 +94,16 @@ function GetMessage({ forceUpdate }) {
   return (
     // タグが複数できる場合は何らかのタグで全体を囲う
     <div>
+      <DownloadMessageDialog
+        targetMessage={data
+          .reduce(
+            (prev, current) =>
+              `${prev}[${current.addedBy.name}]\n${current.message}\n`,
+            ''
+          )
+          .toString()}
+        // title={data[0].message}
+      />
       {data.map((item) => (
         <Card className={classes.root} key={item.id}>
           <CardContent>
