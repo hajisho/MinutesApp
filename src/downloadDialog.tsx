@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import GetAppIcon from '@material-ui/icons/GetApp';
-import IconButton from '@material-ui/core/IconButton';
-import Button from '@material-ui/core/Button';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
-import DialogTitle from '@material-ui/core/DialogTitle';
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+} from '@material-ui/core';
 
 export default function DownloadMessageDialog(props) {
-  const { targetMessage /* title */ } = props;
+  const { targetMessage, title } = props;
 
   // Dialogを開くかどうか
   const [open, setOpen] = useState<boolean>(false);
@@ -19,7 +20,7 @@ export default function DownloadMessageDialog(props) {
     const blob = new Blob([targetMessage], { type: 'text/plan' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'aaa.txt'; // `${title}.txt`;
+    link.download = `${title}.txt`;
     link.click();
 
     setOpen(false);
@@ -35,13 +36,14 @@ export default function DownloadMessageDialog(props) {
 
   return (
     <span>
-      <IconButton
-        aria-label="download"
+      <Button
         onClick={handleClickOpen}
-        data-num="100"
+        size="small"
+        color="inherit"
+        endIcon={<GetAppIcon fontSize="small" />}
       >
-        <GetAppIcon fontSize="small" />
-      </IconButton>
+        Download
+      </Button>
       <Dialog
         open={open}
         onClose={handleClose}
@@ -77,10 +79,10 @@ export default function DownloadMessageDialog(props) {
 
 DownloadMessageDialog.propTypes = {
   targetMessage: PropTypes.string,
-  // title: PropTypes.string,
+  title: PropTypes.string,
 };
 
 DownloadMessageDialog.defaultProps = {
   targetMessage: '',
-  // title: '',
+  title: '',
 };
