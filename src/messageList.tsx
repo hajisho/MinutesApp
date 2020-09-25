@@ -93,49 +93,47 @@ function GetMessage({ forceUpdate }) {
 
   return (
     // タグが複数できる場合は何らかのタグで全体を囲う
-    <>
-      <div>
-        <DownloadMessageDialog
-          targetMessage={data
-            .reduce(
-              (prev, current) =>
-                `${prev}[${current.addedBy.name}]\n${current.message}\n`,
-              ''
-            )
-            .toString()}
-          title={document.title}
-        />
-      </div>
-      <div>
-        {data.map((item) => (
-          <Card className={classes.root} key={item.id}>
-            <CardContent>
-              <Typography
-                className={classes.title}
-                color="textSecondary"
-                gutterBottom
-                align="left"
-              >
-                {item.addedBy.name}
-                <EditMessagePostForm
-                  prevMessage={item.message}
-                  id={item.id.toString()}
-                  isHidden={userData.id !== item.addedBy.id}
-                />
-                <DeleteMessageDialog
-                  targetMessage={item.message}
-                  id={item.id.toString()}
-                  isHidden={userData.id !== item.addedBy.id}
-                />
-              </Typography>
-              <Typography variant="body2" component="p" align="left">
-                {item.message}
-              </Typography>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </>
+    <div>
+      <DownloadMessageDialog
+        targetMessage={data
+          .reduce(
+            (prev, current) =>
+              // 書き込み順で文字列にしている
+              `[${current.addedBy.name}]\n${current.message}\n\n${prev}`,
+            ''
+          )
+          .toString()}
+        title={document.title}
+      />
+
+      {data.map((item) => (
+        <Card className={classes.root} key={item.id}>
+          <CardContent>
+            <Typography
+              className={classes.title}
+              color="textSecondary"
+              gutterBottom
+              align="left"
+            >
+              {item.addedBy.name}
+              <EditMessagePostForm
+                prevMessage={item.message}
+                id={item.id.toString()}
+                isHidden={userData.id !== item.addedBy.id}
+              />
+              <DeleteMessageDialog
+                targetMessage={item.message}
+                id={item.id.toString()}
+                isHidden={userData.id !== item.addedBy.id}
+              />
+            </Typography>
+            <Typography variant="body2" component="p" align="left">
+              {item.message}
+            </Typography>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }
 

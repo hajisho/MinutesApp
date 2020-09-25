@@ -17,7 +17,11 @@ export default function DownloadMessageDialog(props) {
   const [open, setOpen] = useState<boolean>(false);
 
   const handleDownload = () => {
-    const blob = new Blob([targetMessage], { type: 'text/plan' });
+    // 文字列からファイルを作成, フォーマットはお好みで
+    const blob = new Blob([`#${title}\n\n${targetMessage}`], {
+      type: 'text/plan',
+    });
+    // ダウンロードリンクを作成して自動でクリック
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `${title}.txt`;
@@ -51,7 +55,7 @@ export default function DownloadMessageDialog(props) {
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
-          この会議をダウンロードしますか？
+          議事録をダウンロードしますか？
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="download-dialog-description">
@@ -59,7 +63,7 @@ export default function DownloadMessageDialog(props) {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="inherit" size="small" autoFocus>
+          <Button onClick={handleClose} size="small" color="inherit" autoFocus>
             Cancel
           </Button>
           <Button
