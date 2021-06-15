@@ -20,4 +20,5 @@
 
 `sh runAll.sh`
 
-
+![図1](https://user-images.githubusercontent.com/66787198/122077972-2e492200-ce37-11eb-87f4-bb7773e39268.png)
+![図2](https://user-images.githubusercontent.com/66787198/122077981-3012e580-ce37-11eb-862d-93fd02c3def9.png)
