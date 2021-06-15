@@ -24,7 +24,7 @@ deleted_at → DeletedAt
 type Message struct {
 	gorm.Model
 	Message   string
-	MeetingID int
+	MeetingID uint `gorm:"column:meeting_id";`
 	UserID    uint
 }
 
@@ -36,12 +36,13 @@ type User struct {
 
 type Meeting struct {
 	gorm.Model
-	Name string
+	Name   string `gorm:"unique;not null"`
+	UserID uint
 }
 
 type Entry struct {
 	gorm.Model
-	MeetingID int
+	MeetingID int `gorm:"unique;not null;column:meeting_id;"`
 	UserID    uint
 }
 
@@ -74,28 +75,30 @@ func dbInit() {
 }
 
 //DB追加
-//追加したいメッセージは、dbInsert(message.Message, userID)のような感じで呼べば追加される
-func dbInsert(message string, userID uint) {
+//ミーティングIDを指定するように変更
+func messageInsert(message string, meetingID uint, userID uint) {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
 		panic("データベース開ません(dbInsert)")
 	}
 	db.Create(&Message{
-		Message: message,
-		UserID:  userID,
+		Message:   message,
+		MeetingID: meetingID,
+		UserID:    userID,
 	})
 	defer db.Close()
 }
 
-//DB全取得
-//dbGetAll()と呼ぶことで、データベース内の全てのMessageオブジェクトが返される
-func dbGetAll() []Message {
+//指定されたミーティングIDを持つメッセージを全取得
+func MeetingMessageGetAll(meetingID uint) []Message {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
 		panic("データベース開ません(dbGetAll)")
 	}
 	var messages []Message
-	db.Order("created_at desc").Find(&messages) //db.Find(&messages)で構造体Messageに対するテーブルの要素全てを取得し、それをOrder("created_at desc")で新しいものが上に来るように並び替えている
+	//カラム名は自動でスネークケース
+	//MeetingID => meeting_id
+	db.Order("created_at desc").Find(&messages, "meeting_id = ?", meetingID) //db.Find(&messages)で構造体Messageに対するテーブルの要素全てを取得し、それをOrder("created_at desc")で新しいものが上に来るように並び替えている
 	db.Close()
 	return messages
 }
@@ -189,6 +192,7 @@ func comparePassword(dbPassword string, formPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(formPassword))
 }
 
+//議事録一覧を取得
 func getAllMeeting() []Meeting {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
@@ -196,6 +200,32 @@ func getAllMeeting() []Meeting {
 	}
 	defer db.Close()
 	meeting := make([]Meeting, 0)
-	db.Order("updated_at DESC").Find(&meeting)
+	db.Order("created_at desc").Find(&meeting)
 	return meeting
+}
+
+//主に議事録名の取得に用いる
+func getMeetingByID(meetingID uint) Meeting {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(getUserById)")
+	}
+	defer db.Close()
+	var meeting Meeting
+	db.Find(&meeting, "id = ?", meetingID)
+	return meeting
+}
+
+//議事録追加
+func createMeeting(meeting string, userID uint) error {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(dbInsert)")
+	}
+	if err := db.Create(&Meeting{Name: meeting, UserID: userID}).Error; err != nil {
+		return err
+	}
+
+	defer db.Close()
+	return nil
 }

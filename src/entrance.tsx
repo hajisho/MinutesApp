@@ -4,8 +4,6 @@ import AppBar from '@material-ui/core/AppBar';
 import Typography from '@material-ui/core/Typography';
 import ReactDOM from 'react-dom';
 import Button from '@material-ui/core/Button';
-import IconButton from '@material-ui/core/IconButton';
-import MenuIcon from '@material-ui/icons/Menu';
 import Toolbar from '@material-ui/core/Toolbar';
 
 const useStyles = makeStyles((theme) => ({
@@ -16,6 +14,9 @@ const useStyles = makeStyles((theme) => ({
     marginRight: theme.spacing(2),
   },
   title: {
+    flexGrow: 1,
+  },
+  grow: {
     flexGrow: 1,
   },
 }));
@@ -39,17 +40,17 @@ function EntranceAppBar() {
     <div className={classes.header}>
       <AppBar position="static">
         <Toolbar>
-          <IconButton
-            edge="start"
-            className={classes.menuButton}
+          <Button
             color="inherit"
-            aria-label="menu"
+            onClick={() => {
+              window.location.href = '/';
+            }}
           >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" className={classes.title}>
-            Minutes Application
-          </Typography>
+            <Typography variant="h6" className={classes.title}>
+              Minutes Application
+            </Typography>
+          </Button>
+          <div className={classes.grow} />
           <Button color="inherit" onClick={toLogin}>
             Login
           </Button>

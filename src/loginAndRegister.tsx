@@ -7,9 +7,8 @@ import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 import ReactDOM from 'react-dom';
-import IconButton from '@material-ui/core/IconButton';
-import MenuIcon from '@material-ui/icons/Menu';
 import Toolbar from '@material-ui/core/Toolbar';
+import Button from '@material-ui/core/Button';
 import LoginPostForm from './loginForm';
 import RigsterPostForm from './registerForm';
 
@@ -50,6 +49,9 @@ const useStyles = makeStyles((theme) => ({
     marginRight: theme.spacing(2),
   },
   title: {
+    flexGrow: 1,
+  },
+  grow: {
     flexGrow: 1,
   },
 }));
@@ -113,17 +115,16 @@ function LoginAppBar() {
     <div className={classes.header}>
       <AppBar position="static">
         <Toolbar>
-          <IconButton
-            edge="start"
-            className={classes.menuButton}
+          <Button
             color="inherit"
-            aria-label="menu"
+            onClick={() => {
+              window.location.href = '/';
+            }}
           >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" className={classes.title}>
-            Minutes Application
-          </Typography>
+            <Typography variant="h6" className={classes.title}>
+              Minutes Application
+            </Typography>
+          </Button>
         </Toolbar>
       </AppBar>
     </div>

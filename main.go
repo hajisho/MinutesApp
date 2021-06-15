@@ -9,11 +9,11 @@ import (
 
 	//ginのインポート
 	"github.com/gin-gonic/gin"
-
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
+	"sort"
 )
 
 func setupRouter() *gin.Engine {
@@ -31,27 +31,15 @@ func setupRouter() *gin.Engine {
 
 	r.Use(sessions.Sessions("mysession", store))
 	store.Options(sessions.Options{
-		MaxAge:   60 * 60 * 60 * 5, //cookieの寿命は、5時間で設定してある。後で長さは調節
+		MaxAge:   60 * 60 * 24 * 10, //10日立つと無効になる。それまでは"session time out"が出せるようとっておく
 		Secure:   false,
 		HttpOnly: true,
 	})
 
 	// セッション管理のテーブルを更新
 	r.Use(sessionStoreUpdate())
-	// / に　GETリクエストが飛んできたらhandler関数を実行
-	r.GET("/", returnMainPage)
-	// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
-	r.GET("/message", fetchMessage)
-	// ミーティング一覧を返す
-	r.GET("/api_meetings", handleMeetings)
-	// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
-	r.POST("/add_message", handleAddMessage)
-	// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
-	r.POST("/update_message", handleUpdateMessage)
-	// /update_messageへのPOSTリクエストは、handleDeleteMessage関数でハンドル
-	r.POST("/delete_message", handleDeleteMessage)
-	// ユーザー情報を返す
-	r.GET("/user", fetchUserInfo)
+	//ミーティング一覧のページ
+	r.GET("/", returnMeetingsPage)
 	// ログインページを返す
 	r.GET("/login", returnLoginPage)
 	// ログイン動作を司る
@@ -60,10 +48,38 @@ func setupRouter() *gin.Engine {
 	r.GET("/register", returnRegisterPage)
 	//　ユーザー登録動作を司る
 	r.POST("/register", postRegister)
+	//ログイン済みを前提とした処理を行う。sessionIDのチェックsessionCheck()を行った上で実行される
+	logedIn := r.Group("/", sessionCheck())
+	{
+		// ミーティング一覧を返す
+		logedIn.GET("/meetings", handleGetMeetings)
+		// ミーティングの追加
+		logedIn.POST("/meetings", handlePostMeetings)
+
+		//meetingIDで指定されたIDを持つ議事録があるかを調べるミドルウェア
+		// :~　とするとこで gin.contextから呼び出せる
+		mtgIn := logedIn.Group("/meetings/:meetingID", meetingExistCheck())
+		{
+			//議事録一覧ページを返す
+			mtgIn.GET(".", returnMinutesPage)
+			// /message に　GETリクエストが飛んできたらfetchMessage関数を実行
+			mtgIn.GET("/message", fetchMessage)
+			// /add_messageへのPOSTリクエストは、handleAddMessage関数でハンドル
+			mtgIn.POST("/add_message", handleAddMessage)
+			// 重要と考えられる単語を返す
+			mtgIn.GET("/important_words", handleImportantWords)
+			//　重要と考えられる文を返す
+			mtgIn.GET("/important_sentences", handleImportantSentences)
+		}
+		// /update_messageへのPOSTリクエストは、handleUpdateMessage関数でハンドル
+		logedIn.POST("/update_message", handleUpdateMessage)
+		// /delete_messageへのPOSTリクエストは、handleDeleteMessage関数でハンドル
+		logedIn.POST("/delete_message", handleDeleteMessage)
+		// ユーザー情報を返す
+		logedIn.GET("/user", fetchUserInfo)
+	}
 	//セッション情報の削除
 	r.GET("/logout", postLogout)
-	// ミーティング一覧のページ
-	r.GET("/meetings", returnMeetingsPage)
 
 	r.GET("/entrance", returnEntrancePage)
 
@@ -76,27 +92,6 @@ func main() {
 	router := setupRouter()
 	// サーバーを起動しています
 	router.Run(":10000")
-}
-
-func returnMainPage(ctx *gin.Context) {
-	//Cookieがなければログインページにリダイレクト　のつもり
-	// 下記の関数、sessionCeckで確認しているから、実際には必要ないはず。要らなければ削除
-	session := sessions.Default(ctx)
-	user := session.Get("SessionID")
-	if user == nil {
-		ctx.Redirect(http.StatusSeeOther, "/entrance")
-		ctx.Abort()
-		return
-	}
-
-	if !(SessionExist(user.(string))) {
-		// 不当なセッション情報によるアクセス
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid session ID"})
-		ctx.Abort()
-		return
-	}
-
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "議事録", "header": "minuteHeader", "id": []string{"message"}})
 }
 
 // ResponseUserPublic は、公開ユーザー情報がクライアントへ返される時の形式です。
@@ -116,7 +111,36 @@ type ResponseMessage struct {
 
 // ResponseMeeting は、ミーティングがクライアントへ返される時の形式です。
 type ResponseMeeting struct {
+	ID   uint   `json:"id"`
 	Name string `json:"name"`
+}
+
+//URLで指定されたIDを持つ議事録があるかを調べるミドルウェア
+func meetingExistCheck() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		m, _ := strconv.Atoi(ctx.Param("meetingID"))
+		meetingID := uint(m)
+
+		meeting := getMeetingByID(meetingID)
+
+		if meeting.ID == 0 {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
+			ctx.Abort()
+			return
+		}
+		return
+	}
+}
+
+//議事録本体ページ
+func returnMinutesPage(ctx *gin.Context) {
+
+	m, _ := strconv.Atoi(ctx.Param("meetingID"))
+	meetingID := uint(m)
+
+	meeting := getMeetingByID(meetingID)
+
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": meeting.Name, "header": "minuteHeader", "id": []string{"message"}})
 }
 
 //ログインページのhtmlを返す
@@ -133,21 +157,50 @@ func returnEntrancePage(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Entrance", "header": "entranceHeader", "id": []string{"entrance", "serverMessage"}})
 }
 
+//議事録一覧ページ
+//セッションのエラーが多いページなので、エラーは全てリダイレクトにしている
 func returnMeetingsPage(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Meetings", "header": "minuteHeader", "id": []string{"meetings"}})
+
+	session := sessions.Default(ctx)
+	user := session.Get("SessionID")
+
+	if user == nil {
+		ctx.Redirect(http.StatusSeeOther, "/entrance")
+		ctx.Abort()
+		return
+	}
+
+	if !(SessionExist(user.(string))) {
+		session.Clear()
+		session.Save()
+		// 不当なセッション情報によるアクセス
+		ctx.Redirect(http.StatusSeeOther, "/entrance")
+		ctx.Abort()
+		return
+	}
+
+	if SessionTimeOut(user.(string)) {
+		//セッション有効時間が切れていた場合
+		//セッションからデータを破棄する
+		sessionDelete(user.(string))
+		session.Clear()
+		session.Save()
+
+		sessionDelete(user.(string))
+		ctx.Redirect(http.StatusSeeOther, "/entrance")
+		ctx.Abort()
+		return
+	}
+
+	ctx.HTML(http.StatusOK, "template.html", gin.H{"title": "Meetings", "header": "minuteHeader", "id": []string{"serverMessage", "meetings"}})
 }
 
 //messagesに含まれるものを jsonで返す
 func fetchMessage(ctx *gin.Context) {
+	m, _ := strconv.Atoi(ctx.Param("meetingID"))
+	meetingID := uint(m)
 
-	session := sessions.Default(ctx)
-
-	if session.Get("SessionID") == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
-		return
-	}
-
-	messagesInDB := dbGetAll()
+	messagesInDB := MeetingMessageGetAll(meetingID)
 	// データベースに保存されているメッセージの形式から、クライアントへ返す形式に変換する
 	messages := make([]ResponseMessage, len(messagesInDB))
 	for i, msg := range messagesInDB {
@@ -174,6 +227,10 @@ func handleAddMessage(ctx *gin.Context) {
 	// POST bodyからメッセージを獲得
 	req := new(AddMessageRequest)
 	err := ctx.BindJSON(req)
+
+	m, _ := strconv.Atoi(ctx.Param("meetingID"))
+	meetingID := uint(m)
+
 	if err != nil {
 		// メッセージがJSONではない、もしくは、content-typeがapplication/jsonになっていない
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request as JSON format is expected"})
@@ -187,23 +244,10 @@ func handleAddMessage(ctx *gin.Context) {
 		return
 	}
 
-	session := sessions.Default(ctx)
-	sessionID := session.Get("SessionID")
-
-	if sessionID == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
-		return
-	}
-
-	if !(SessionExist(sessionID.(string))) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
-		return
-	}
-
 	user := getSessionUserID(ctx)
 
 	//メッセージをデータベースへ追加
-	dbInsert(req.Message, user.ID)
+	messageInsert(req.Message, meetingID, user.ID)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 
@@ -307,12 +351,6 @@ func handleDeleteMessage(ctx *gin.Context) {
 
 // ユーザー自身の情報を返す
 func fetchUserInfo(ctx *gin.Context) {
-	session := sessions.Default(ctx)
-
-	if session.Get("SessionID") == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
-		return
-	}
 
 	user := getSessionUserID(ctx)
 	userInfo := ResponseUserPublic{
@@ -424,13 +462,150 @@ func postLogout(ctx *gin.Context) {
 
 }
 
-func handleMeetings(ctx *gin.Context) {
+//tfidfを元に重要度を計算し、重要と考えられる単語を返す
+func handleImportantWords(ctx *gin.Context) {
+	m, _ := strconv.Atoi(ctx.Param("meetingID"))
+	meetingID := uint(m)
+
+	messagesInDB := MeetingMessageGetAll(meetingID)
+
+	messages := make([]string, len(messagesInDB))
+	for i, msg := range messagesInDB {
+		messages[i] = msg.Message
+	}
+	allTfIdf := allTfIdf(messages)
+	bestTfIdf := map[string]float64{}
+
+	//複数文書に現れる単語のtfidfは最も大きい値を採用
+	for _, tfidfs := range allTfIdf {
+		for term := range tfidfs {
+			if _, ok := bestTfIdf[term]; ok {
+				if tfidfs[term] > bestTfIdf[term] {
+					bestTfIdf[term] = tfidfs[term]
+				}
+			} else {
+				bestTfIdf[term] = tfidfs[term]
+			}
+		}
+	}
+	//tfidfが大きい順にソート
+	sortedTfIdf := List{}
+	for k, v := range bestTfIdf {
+		e := Items{k, v}
+		sortedTfIdf = append(sortedTfIdf, e)
+	}
+	sort.Sort(sortedTfIdf)
+	//上位10個(1０未満だったらその数だけ)を返す
+	n := 10
+	if n > len(sortedTfIdf) {
+		n = len(sortedTfIdf)
+	}
+	result := make([]string, n)
+	for i, item := range sortedTfIdf {
+		if i == n {
+			break
+		}
+		result[i] = item.name
+	}
+	ctx.JSON(http.StatusOK, result)
+}
+
+//以下mapのvalueを基準としてソートするために必要なもの
+type Items struct {
+	name  string
+	value float64
+}
+type List []Items
+
+func (l List) Len() int {
+	return len(l)
+}
+
+func (l List) Swap(i, j int) {
+	l[i], l[j] = l[j], l[i]
+}
+
+func (l List) Less(i, j int) bool {
+	if l[i].value == l[j].value {
+		return (l[i].name < l[j].name)
+	} else {
+		return (l[i].value > l[j].value)
+	}
+}
+
+//ここまで
+
+func handleImportantSentences(ctx *gin.Context) {
+	m, _ := strconv.Atoi(ctx.Param("meetingID"))
+	meetingID := uint(m)
+
+	messagesInDB := MeetingMessageGetAll(meetingID)
+	messages := make([]string, len(messagesInDB))
+	for i, msg := range messagesInDB {
+		messages[i] = msg.Message
+	}
+	ranking := getImportantSentence(messages)
+	n := 5
+	if n > len(messages) {
+		n = len(messages)
+	}
+	result := make([]string, n)
+	for i, rank := range ranking {
+		if i == n {
+			break
+		}
+		result[i] = messages[rank]
+	}
+	ctx.JSON(http.StatusOK, result)
+}
+
+//議事録一覧を取得
+func handleGetMeetings(ctx *gin.Context) {
 	ms := getAllMeeting()
 	ret := make([]ResponseMeeting, len(ms))
 	for i, meeting := range ms {
 		ret[i] = ResponseMeeting{
+			ID:   meeting.ID,
 			Name: meeting.Name,
 		}
 	}
 	ctx.JSON(http.StatusOK, ret)
+}
+
+//議事録追加の際にクライアントから送られるフォーマット
+type AddMeetingRequest struct {
+	Meeting string `json:"meeting"`
+}
+
+//議事録を追加
+func handlePostMeetings(ctx *gin.Context) {
+	// POST bodyからメッセージを獲得
+	req := new(AddMeetingRequest)
+	err := ctx.BindJSON(req)
+
+	if err != nil {
+		// メッセージがJSONではない、もしくは、content-typeがapplication/jsonになっていない
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request as JSON format is expected"})
+		return
+	}
+
+	if req.Meeting == "" {
+		// メッセージがない、無効なリクエスト
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Malformed request due to parameter 'message' being empty"})
+		// 帰ることを忘れない
+		return
+	}
+
+	user := getSessionUserID(ctx)
+
+	//議事録を作成
+	if err := createMeeting(req.Meeting, user.ID); err != nil {
+		// ログインIDがすでに使用されている
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "already use this name"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"success": true})
+
+	return
 }

@@ -168,7 +168,7 @@ export default function LoginPostForm(props) {
           id="standard-basic"
           label="パスワード"
           value={password}
-          type="textbox"
+          type="password"
           onChange={(event) => setPassword(event.target.value)}
         />
         <p />

@@ -134,7 +134,7 @@ DeleteMessageDialog.propTypes = {
 
 DeleteMessageDialog.defaultProps = {
   onSubmitSuccessful: () => {
-    window.location.href = '/';
+    window.location.href = window.location.pathname;
   },
   targetMessage: '',
   id: '',

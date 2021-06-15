@@ -2,11 +2,10 @@ package main
 
 import (
 	"encoding/base64"
-	"net/http"
-	"time"
-
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
@@ -123,11 +122,67 @@ func sessionStoreUpdate() gin.HandlerFunc {
 
 		var session TempSession
 		now := time.Now()
-		db.Where("valid_time <= ?", now).Delete(&session)
+		term_date := now.Add(-10 * 24 * time.Hour) //10日間アクセスのないsessionIDは自動で消去される
+
+		db.Where("valid_time <= ?", term_date).Delete(&session)
 		db.Close()
 		c.Next()
 	}
+}
 
+//sessionの有効期限をすぎていないか
+//すぎていたらtureを返す
+func SessionTimeOut(sessionID string) bool {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(dbGetOne)")
+	}
+	var session TempSession
+	now := time.Now()
+
+	db.Where(&TempSession{SessionID: sessionID}).Find(&session)
+
+	if session.ValidTime.Before(now) {
+		return true
+	}
+	db.Close()
+	return false
+}
+
+//正当なセッションIDを持っているか確認する
+//ただし、権限などはここでは保証しない
+func sessionCheck() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+
+		session := sessions.Default(ctx)
+		sessionID := session.Get("SessionID")
+
+		// セッションがない場合
+		if sessionID == nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+			ctx.Abort()
+			return
+		} else if !(SessionExist(sessionID.(string))) {
+			session.Clear()
+			session.Save()
+			// 不当なセッション情報によるアクセスの場合
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid session ID"})
+			ctx.Abort()
+			return
+		} else if SessionTimeOut(sessionID.(string)) {
+			//セッション有効時間が切れていた場合
+			//セッションからデータを破棄する
+			sessionDelete(sessionID.(string))
+			//session.Clear()
+			//session.Save()
+
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Session time out"})
+			ctx.Abort()
+			return
+		}
+		//ctx.Next()
+
+	}
 }
 
 //session IDを生成するための関数群
@@ -179,8 +234,8 @@ func sessionGetAll() []TempSession {
 }
 
 //指定したuserIDのレコードのvalid_timeを今にする(今が有効期限になる)
-//時間がたったセッション情報が破棄されるかテストするとき用
-func sessionTimeEdit(userID string) {
+//時間がたったセッション情報がtimeoutになるかテストするとき用
+func sessionTimeSetNow(userID string) {
 	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
 	if err != nil {
 		panic("データベース開ません(dbGetAll)")
@@ -190,6 +245,22 @@ func sessionTimeEdit(userID string) {
 
 	now := time.Now()
 	session.ValidTime = now
+	db.Save(&session)
+	db.Close()
+}
+
+//指定したuserIDのレコードのvalid_timeを今にする(今が有効期限になる)
+//時間がたったセッション情報がtimeoutになるかテストするとき用
+func sessionTimeSet10daysLater(userID string) {
+	db, err := gorm.Open("sqlite3", "minutes.sqlite3")
+	if err != nil {
+		panic("データベース開ません(dbGetAll)")
+	}
+	var session TempSession
+	db.Where(&TempSession{UserID: userID}).Find(&session)
+
+	now := time.Now()
+	session.ValidTime = now.Add(-10 * 24 * time.Hour)
 	db.Save(&session)
 	db.Close()
 }

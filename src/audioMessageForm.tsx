@@ -6,7 +6,7 @@ import Alert from '@material-ui/lab/Alert';
 import KeyboardVoiceIcon from '@material-ui/icons/KeyboardVoice';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 
-const apiUrlAddMessage = '/add_message';
+const apiUrlAddMessage = `${window.location.pathname}/add_message`;
 
 const useStyles = makeStyles((theme) =>
   createStyles({
@@ -18,6 +18,7 @@ const useStyles = makeStyles((theme) =>
 
 export default function AudioMessagePostForm(props) {
   const [working, setWorking] = useState<boolean>(false);
+  const [action, setAction] = useState<String>('Start');
   const classes = useStyles();
 
   if ('SpeechRecognition' in window) {
@@ -79,6 +80,7 @@ export default function AudioMessagePostForm(props) {
   };
 
   const handleSubmit = (event: React.FormEvent) => {
+    setAction('Recording Now');
     setWorking(true);
     try {
       // ページが更新されないようにする
@@ -95,11 +97,11 @@ export default function AudioMessagePostForm(props) {
         disabled={working}
         variant="contained"
         color="primary"
-        startIcon={<KeyboardVoiceIcon />}
+        endIcon={<KeyboardVoiceIcon />}
         className={classes.button}
         onClick={handleSubmit}
       >
-        Start
+        {action}
       </Button>
       <Button
         disabled={working}
@@ -107,7 +109,9 @@ export default function AudioMessagePostForm(props) {
         color="secondary"
         className={classes.button}
         onClick={() => {
-          window.location.href = '/';
+          setAction('Start');
+          window.location.href = window.location.pathname;
+          // props.onSubmitSuccessful();
         }}
       >
         Stop

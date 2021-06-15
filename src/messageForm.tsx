@@ -21,7 +21,7 @@ const useStyles = makeStyles((theme) =>
 
 // メッセージ追加のAPIへのURL
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const API_URL_ADD_MESSAGE = '/add_message';
+const API_URL_ADD_MESSAGE = `${window.location.pathname}/add_message`;
 
 export default function MessagePostForm(props) {
   // テキストボックス内のメッセージ
